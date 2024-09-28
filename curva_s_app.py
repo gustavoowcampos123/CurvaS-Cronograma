@@ -37,9 +37,10 @@ def remove_prefix(predecessor):
             return predecessor[len(prefix):].strip()
     return predecessor.strip()
 
-# Função para calcular o caminho crítico
+# Função para calcular o caminho crítico e exibir atividades sem predecessora em uma tabela
 def calculate_critical_path(df):
     G = nx.DiGraph()
+    atividades_sem_predecessora = []  # Lista para armazenar as atividades sem predecessora
     
     if 'Predecessoras' in df.columns:
         for i, row in df.iterrows():
@@ -54,9 +55,16 @@ def calculate_critical_path(df):
                     except ValueError:
                         st.error(f"Duração inválida para a tarefa {row['Nome da tarefa']}: {row['Duração']} (linha {i+1})")
             else:
-                st.warning(f"A tarefa {row['Nome da tarefa']} (linha {i+1}) não tem predecessoras.")
+                # Adiciona as atividades sem predecessora à lista
+                atividades_sem_predecessora.append(row)
     else:
         st.error("A coluna 'Predecessoras' não foi encontrada no arquivo.")
+    
+    # Verificar se há atividades sem predecessoras e exibi-las em uma tabela
+    if atividades_sem_predecessora:
+        st.write("Atividades sem predecessoras:")
+        atividades_sem_predecessora_df = pd.DataFrame(atividades_sem_predecessora)
+        st.table(atividades_sem_predecessora_df[['Nome da tarefa', 'Início', 'Término', 'Duração']])
     
     if len(G.nodes) == 0:
         st.error("O grafo de atividades está vazio. Verifique as predecessoras e a duração das atividades.")
