@@ -4,6 +4,10 @@ import networkx as nx
 import numpy as np
 import streamlit as st
 import io
+from openpyxl import Workbook
+from openpyxl.drawing.image import Image
+from openpyxl.utils.dataframe import dataframe_to_rows
+from openpyxl.chart import LineChart, Reference
 
 # Função para limpar a abreviação dos dias da semana
 def clean_weekday_abbreviation(date_str):
@@ -92,22 +96,52 @@ def generate_s_curve(df, start_date, end_date):
     progresso_acumulado_percentual = np.cumsum(progresso_acumulado)
     progresso_acumulado_percentual = (progresso_acumulado_percentual / progresso_acumulado_percentual[-1]) * 100
     
-    return timeline, progresso_acumulado_percentual
+    # Calcular a diferença semanal (Delta)
+    delta = np.diff(progresso_acumulado_percentual, prepend=0)
+    
+    return timeline, progresso_acumulado_percentual, delta
 
-# Função para exportar os dados para Excel em um buffer e permitir download
-def export_to_excel(df, caminho_critico, curva_s, timeline):
+# Função para exportar os dados para Excel com gráfico na aba "Curva S"
+def export_to_excel(df, caminho_critico, curva_s, delta, timeline):
     output = io.BytesIO()
     
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df.to_excel(writer, sheet_name='Cronograma', index=False)
-        
-        critical_path_df = pd.DataFrame(caminho_critico, columns=['Atividades Caminho Critico'])
-        critical_path_df.to_excel(writer, sheet_name='Caminho Critico', index=False)
-        
-        curva_s_df = pd.DataFrame({'Data': timeline, 'Progresso Acumulado (%)': curva_s})
-        curva_s_df.to_excel(writer, sheet_name='Curva S', index=False)
+    # Criar o workbook e a planilha
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'Curva S'
     
-    # Movemos o ponteiro do buffer para o início
+    # Adicionar os dados de Curva S e Delta na planilha
+    curva_s_df = pd.DataFrame({'Data': timeline, 'Progresso Acumulado (%)': curva_s, 'Delta': delta})
+    
+    for r in dataframe_to_rows(curva_s_df, index=False, header=True):
+        ws.append(r)
+    
+    # Criar o gráfico de linha da Curva S
+    chart = LineChart()
+    chart.title = "Curva S - Progresso Acumulado"
+    chart.y_axis.title = 'Progresso Acumulado (%)'
+    chart.x_axis.title = 'Data'
+    
+    # Referenciar os dados do gráfico
+    data = Reference(ws, min_col=2, min_row=1, max_row=len(curva_s_df) + 1, max_col=2)
+    chart.add_data(data, titles_from_data=True)
+    
+    # Colocar o gráfico na planilha
+    ws.add_chart(chart, "E5")
+    
+    # Adicionar dados e gráfico na planilha do cronograma
+    cronograma_ws = wb.create_sheet(title="Cronograma")
+    for r in dataframe_to_rows(df, index=False, header=True):
+        cronograma_ws.append(r)
+    
+    # Adicionar o caminho crítico na aba
+    caminho_critico_ws = wb.create_sheet(title="Caminho Critico")
+    critical_path_df = pd.DataFrame(caminho_critico, columns=['Atividades Caminho Critico'])
+    for r in dataframe_to_rows(critical_path_df, index=False, header=True):
+        caminho_critico_ws.append(r)
+    
+    # Salvar o Excel no buffer
+    wb.save(output)
     output.seek(0)
     
     return output
@@ -152,15 +186,6 @@ if uploaded_file is not None:
     if end_date <= start_date:
         st.error("A data final do cronograma deve ser posterior à data inicial.")
     else:
-        timeline, curva_s = generate_s_curve(df, start_date, end_date)
+        timeline, curva_s, delta = generate_s_curve(df, start_date, end_date)
         
-        st.write("Curva S:")
-        plot_s_curve(timeline, curva_s)
-        
-        # Exportar o Excel e fornecer o download
-        if st.button("Exportar Cronograma com Curva S"):
-            excel_data = export_to_excel(df, caminho_critico, curva_s, timeline)
-            st.download_button(label="Baixar Cronograma com Curva S",
-                               data=excel_data,
-                               file_name="cronograma_com_curva_s.xlsx",
-                               mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        st.write
