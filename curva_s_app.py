@@ -4,36 +4,50 @@ import networkx as nx
 import numpy as np
 import streamlit as st
 
-# Funções anteriores
+# Função para limpar a abreviação dos dias da semana
+def clean_weekday_abbreviation(date_str):
+    return date_str.split(' ', 1)[1] if isinstance(date_str, str) else date_str
 
+# Função para ler o arquivo Excel e tratar as colunas de data
 def read_excel(file):
     df = pd.read_excel(file)
+    
+    # Limpar as colunas de datas
+    df['Início'] = df['Início'].apply(clean_weekday_abbreviation)
+    df['Término'] = df['Término'].apply(clean_weekday_abbreviation)
+    
+    # Converter para datetime
+    df['Início'] = pd.to_datetime(df['Início'], format='%d/%m/%y', errors='coerce')
+    df['Término'] = pd.to_datetime(df['Término'], format='%d/%m/%y', errors='coerce')
+    
     return df
 
+# Funções de cálculo do caminho crítico e da curva S
 def calculate_critical_path(df):
     G = nx.DiGraph()
     for i, row in df.iterrows():
-        G.add_edge(row['Atividade'], row['Dependencia'], weight=row['Duracao'])
+        G.add_edge(row['Nome da tarefa'], row['Dependencia'], weight=row['Duração'])
     
     critical_path = nx.dag_longest_path(G, weight='weight')
     return critical_path
 
 def generate_s_curve(df, start_date):
-    df['Data Inicio'] = pd.to_datetime(df['Data Inicio'])
-    df['Data Fim'] = pd.to_datetime(df['Data Fim'])
+    df['Início'] = pd.to_datetime(df['Início'])
+    df['Término'] = pd.to_datetime(df['Término'])
     
-    df['Duracao'] = (df['Data Fim'] - df['Data Inicio']).dt.days
+    df['Duracao'] = (df['Término'] - df['Início']).dt.days
     df['Progresso Diario'] = 1 / df['Duracao']
     
-    timeline = pd.date_range(start=start_date, end=df['Data Fim'].max(), freq='W')
+    timeline = pd.date_range(start=start_date, end=df['Término'].max(), freq='W')
     progresso_acumulado = []
     
     for date in timeline:
-        progresso_semanal = df.loc[df['Data Inicio'] <= date, 'Progresso Diario'].sum()
+        progresso_semanal = df.loc[df['Início'] <= date, 'Progresso Diario'].sum()
         progresso_acumulado.append(progresso_semanal)
     
     return timeline, np.cumsum(progresso_acumulado)
 
+# Função para exportar os dados para Excel
 def export_to_excel(df, caminho_critico, curva_s, timeline, output_path):
     with pd.ExcelWriter(output_path) as writer:
         df.to_excel(writer, sheet_name='Cronograma', index=False)
@@ -44,6 +58,7 @@ def export_to_excel(df, caminho_critico, curva_s, timeline, output_path):
         curva_s_df = pd.DataFrame({'Data': timeline, 'Progresso Acumulado': curva_s})
         curva_s_df.to_excel(writer, sheet_name='Curva S', index=False)
 
+# Função para plotar a Curva S
 def plot_s_curve(timeline, curva_s):
     fig, ax = plt.subplots()
     ax.plot(timeline, curva_s, marker='o')
@@ -54,7 +69,6 @@ def plot_s_curve(timeline, curva_s):
     st.pyplot(fig)
 
 # Interface Streamlit
-
 st.title('Gerador de Curva S e Caminho Crítico')
 
 uploaded_file = st.file_uploader("Escolha o arquivo Excel do cronograma", type="xlsx")
