@@ -112,3 +112,4 @@ if uploaded_file is not None:
             output_path = 'cronograma_com_curva_s.xlsx'
             export_to_excel(df, caminho_critico, curva_s, timeline, output_path)
             st.success(f"Arquivo exportado com sucesso! Baixe aqui: [Download {output_path}]({output_path})")
+
