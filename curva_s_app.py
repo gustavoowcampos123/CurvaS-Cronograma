@@ -191,4 +191,4 @@ if uploaded_file is not None:
         plot_s_curve(timeline, curva_s)
         
         # Exportar o Excel e fornecer o download
-        excel_data = export_to_excel(df, caminho_critico, curva_s)
+        excel_data = export_to_excel(caminho_critico, curva_s, delta, timeline)
