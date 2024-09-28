@@ -21,6 +21,7 @@ def read_excel(file):
     df['Término'] = pd.to_datetime(df['Término'], format='%d/%m/%y', errors='coerce')
     
     st.write("Colunas encontradas no arquivo:", df.columns)  # Para inspecionar as colunas
+    st.write("Datas do cronograma:", df[['Início', 'Término']])  # Verificar datas após conversão
     return df
 
 # Função para calcular o caminho crítico
@@ -60,6 +61,9 @@ def generate_s_curve(df, start_date, end_date):
     for date in timeline:
         progresso_semanal = df.loc[df['Início'] <= date, 'Progresso Diario'].sum()
         progresso_acumulado.append(progresso_semanal)
+    
+    st.write("Timeline gerada:", timeline)  # Verificar timeline gerada
+    st.write("Progresso acumulado:", np.cumsum(progresso_acumulado))  # Verificar progresso acumulado
     
     return timeline, np.cumsum(progresso_acumulado)
 
@@ -108,7 +112,10 @@ if uploaded_file is not None:
     st.write("Caminho Crítico:")
     st.write(caminho_critico)
     
-    if end_date and start_date:
+    # Verificar se a data final é maior que a data inicial
+    if end_date <= start_date:
+        st.error("A data final do cronograma deve ser posterior à data inicial.")
+    else:
         timeline, curva_s = generate_s_curve(df, start_date, end_date)
         
         st.write("Curva S:")
