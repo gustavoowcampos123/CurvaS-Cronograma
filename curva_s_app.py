@@ -24,6 +24,18 @@ def read_excel(file):
     st.write("Datas do cronograma:", df[['Início', 'Término']])  # Verificar datas após conversão
     return df
 
+# Função para remover prefixos indesejados das predecessoras
+def remove_prefix(predecessor):
+    # Lista de prefixos indesejados
+    prefixes = ['TT', 'TI', 'II']
+    
+    # Verificar se há algum prefixo na predecessora
+    for prefix in prefixes:
+        if predecessor.startswith(prefix):
+            # Remover o prefixo
+            return predecessor[len(prefix):].strip()
+    return predecessor.strip()
+
 # Função para calcular o caminho crítico com verificações
 def calculate_critical_path(df):
     G = nx.DiGraph()
@@ -31,16 +43,17 @@ def calculate_critical_path(df):
     # Verificar se a coluna de predecessoras existe
     if 'Predecessoras' in df.columns:
         for i, row in df.iterrows():
-            # Separar múltiplas predecessoras
+            # Verificar se há predecessoras
             if pd.notna(row['Predecessoras']):
                 predecessoras = str(row['Predecessoras']).split(';')
                 for pred in predecessoras:
-                    # Remover dias extras, como 'TI-15 dias'
-                    pred = pred.split('-')[0].strip()
+                    # Remover prefixos indesejados e qualquer sufixo de dias
+                    pred_clean = remove_prefix(pred.split('-')[0].strip())
                     try:
                         # Verificar se a duração não é nula e está no formato correto
                         duration = int(row['Duração'].split()[0])
-                        G.add_edge(pred, row['Nome da tarefa'], weight=duration)
+                        if pred_clean:  # Se o valor da predecessora não estiver em branco
+                            G.add_edge(pred_clean, row['Nome da tarefa'], weight=duration)
                     except ValueError:
                         st.error(f"Duração inválida para a tarefa {row['Nome da tarefa']}: {row['Duração']}")
             else:
