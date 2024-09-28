@@ -193,4 +193,4 @@ if uploaded_file is not None:
         # Exportar o Excel e fornecer o download
         if st.button("Exportar Cronograma com Curva S"):
             excel_data = export_to_excel(df, caminho_critico, curva_s, delta, timeline)
-            st.download_button(label="Baixar Cron
+            st.download_button(label="Baixar Cronograma com Curva S",
