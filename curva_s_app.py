@@ -24,7 +24,7 @@ def read_excel(file):
     st.write("Datas do cronograma:", df[['Início', 'Término']])  # Verificar datas após conversão
     return df
 
-# Função para calcular o caminho crítico
+# Função para calcular o caminho crítico com verificações
 def calculate_critical_path(df):
     G = nx.DiGraph()
     
@@ -37,12 +37,29 @@ def calculate_critical_path(df):
                 for pred in predecessoras:
                     # Remover dias extras, como 'TI-15 dias'
                     pred = pred.split('-')[0].strip()
-                    G.add_edge(pred, row['Nome da tarefa'], weight=row['Duração'])
+                    try:
+                        # Verificar se a duração não é nula e está no formato correto
+                        duration = int(row['Duração'].split()[0])
+                        G.add_edge(pred, row['Nome da tarefa'], weight=duration)
+                    except ValueError:
+                        st.error(f"Duração inválida para a tarefa {row['Nome da tarefa']}: {row['Duração']}")
+            else:
+                st.warning(f"A tarefa {row['Nome da tarefa']} não tem predecessoras.")
     else:
         st.error("A coluna 'Predecessoras' não foi encontrada no arquivo.")
     
-    critical_path = nx.dag_longest_path(G, weight='weight')
-    return critical_path
+    # Verificar se o grafo tem nós e arestas
+    if len(G.nodes) == 0:
+        st.error("O grafo de atividades está vazio. Verifique as predecessoras e a duração das atividades.")
+        return []
+    
+    try:
+        # Tentar calcular o caminho crítico
+        critical_path = nx.dag_longest_path(G, weight='weight')
+        return critical_path
+    except Exception as e:
+        st.error(f"Erro ao calcular o caminho crítico: {e}")
+        return []
 
 # Função para gerar a Curva S baseada em semanas
 def generate_s_curve(df, start_date, end_date):
