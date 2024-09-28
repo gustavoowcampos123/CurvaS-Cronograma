@@ -122,7 +122,7 @@ def export_to_excel(df, caminho_critico, curva_s, delta, timeline):
     chart.x_axis.title = 'Data'
     
     # Referenciar os dados do gráfico
-    data = Reference(ws, min_col=2, min_row=1, max_row=len(curva_s_df) + 1, max_col=2)
+    data = Reference(ws, min_col=2, min_row=2, max_row=len(curva_s_df) + 1, max_col=2)
     chart.add_data(data, titles_from_data=True)
     
     # Colocar o gráfico na planilha
@@ -188,9 +188,4 @@ if uploaded_file is not None:
         timeline, curva_s, delta = generate_s_curve(df, start_date, end_date)
         
         st.write("Curva S:")
-        plot_s_curve(timeline, curva_s)
-        
-        # Exportar o Excel e fornecer o download
-        if st.button("Exportar Cronograma com Curva S"):
-            excel_data = export_to_excel(df, caminho_critico, curva_s, delta, timeline)
-            st.download_button(label="Baixar Cronograma com Curva S"),
+        plot
