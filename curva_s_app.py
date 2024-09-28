@@ -188,11 +188,9 @@ if uploaded_file is not None:
         timeline, curva_s, delta = generate_s_curve(df, start_date, end_date)
         
         st.write("Curva S:")
-        plot_s_curve(timeline, curva_s)  # Correção: exibir o gráfico com st.pyplot
+        plot_s_curve(timeline, curva_s)
         
         # Exportar o Excel e fornecer o download
         if st.button("Exportar Cronograma com Curva S"):
             excel_data = export_to_excel(df, caminho_critico, curva_s, delta, timeline)
-            st.download_button(label="Baixar Cronograma com Curva S",
-                               data=excel_data,
-                               file
+            st.download_button(label="Baixar Cron
