@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 import streamlit as st
+import io
 
 # Função para limpar a abreviação dos dias da semana
 def clean_weekday_abbreviation(date_str):
@@ -93,9 +94,11 @@ def generate_s_curve(df, start_date, end_date):
     
     return timeline, progresso_acumulado_percentual
 
-# Função para exportar os dados para Excel
-def export_to_excel(df, caminho_critico, curva_s, timeline, output_path):
-    with pd.ExcelWriter(output_path) as writer:
+# Função para exportar os dados para Excel em um buffer e permitir download
+def export_to_excel(df, caminho_critico, curva_s, timeline):
+    output = io.BytesIO()
+    
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
         df.to_excel(writer, sheet_name='Cronograma', index=False)
         
         critical_path_df = pd.DataFrame(caminho_critico, columns=['Atividades Caminho Critico'])
@@ -103,6 +106,11 @@ def export_to_excel(df, caminho_critico, curva_s, timeline, output_path):
         
         curva_s_df = pd.DataFrame({'Data': timeline, 'Progresso Acumulado (%)': curva_s})
         curva_s_df.to_excel(writer, sheet_name='Curva S', index=False)
+    
+    # Movemos o ponteiro do buffer para o início
+    output.seek(0)
+    
+    return output
 
 # Função para plotar a Curva S
 def plot_s_curve(timeline, curva_s):
@@ -149,7 +157,10 @@ if uploaded_file is not None:
         st.write("Curva S:")
         plot_s_curve(timeline, curva_s)
         
+        # Exportar o Excel e fornecer o download
         if st.button("Exportar Cronograma com Curva S"):
-            output_path = 'cronograma_com_curva_s.xlsx'
-            export_to_excel(df, caminho_critico, curva_s, timeline, output_path)
-            st.success(f"Arquivo exportado com sucesso! Baixe aqui: [Download {output_path}]({output_path})")
+            excel_data = export_to_excel(df, caminho_critico, curva_s, timeline)
+            st.download_button(label="Baixar Cronograma com Curva S",
+                               data=excel_data,
+                               file_name="cronograma_com_curva_s.xlsx",
+                               mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
