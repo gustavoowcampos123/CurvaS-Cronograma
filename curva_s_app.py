@@ -27,12 +27,18 @@ def read_excel(file):
 def calculate_critical_path(df):
     G = nx.DiGraph()
     
-    # Verificar se a coluna de dependência existe
-    if 'Dependencia' in df.columns:
+    # Verificar se a coluna de predecessoras existe
+    if 'Predecessoras' in df.columns:
         for i, row in df.iterrows():
-            G.add_edge(row['Nome da tarefa'], row['Dependencia'], weight=row['Duração'])
+            # Separar múltiplas predecessoras
+            if pd.notna(row['Predecessoras']):
+                predecessoras = str(row['Predecessoras']).split(';')
+                for pred in predecessoras:
+                    # Remover dias extras, como 'TI-15 dias'
+                    pred = pred.split('-')[0].strip()
+                    G.add_edge(pred, row['Nome da tarefa'], weight=row['Duração'])
     else:
-        st.error("A coluna 'Dependencia' não foi encontrada no arquivo.")
+        st.error("A coluna 'Predecessoras' não foi encontrada no arquivo.")
     
     critical_path = nx.dag_longest_path(G, weight='weight')
     return critical_path
@@ -112,4 +118,3 @@ if uploaded_file is not None:
             output_path = 'cronograma_com_curva_s.xlsx'
             export_to_excel(df, caminho_critico, curva_s, timeline, output_path)
             st.success(f"Arquivo exportado com sucesso! Baixe aqui: [Download {output_path}]({output_path})")
-
