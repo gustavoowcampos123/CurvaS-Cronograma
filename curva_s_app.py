@@ -194,4 +194,4 @@ if uploaded_file is not None:
         excel_data = export_to_excel(df, caminho_critico, curva_s, delta, timeline)
         st.download_button(
             label="Baixar Cronograma com Curva S",
-            data=excel_data.getvalue(),
+            data=excel_data.getvalue()),
