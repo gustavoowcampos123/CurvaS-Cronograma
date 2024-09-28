@@ -191,7 +191,4 @@ if uploaded_file is not None:
         plot_s_curve(timeline, curva_s)
         
         # Exportar o Excel e fornecer o download
-        excel_data = export_to_excel(df, caminho_critico, curva_s, delta, timeline)
-        st.download_button(
-            label="Baixar Cronograma com Curva S",
-            data=excel_data.getvalue()),
+        excel_data = export_to_excel(df, caminho_critico, curva_s),
