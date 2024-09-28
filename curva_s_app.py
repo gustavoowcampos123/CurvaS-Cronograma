@@ -20,19 +20,18 @@ def read_excel(file):
     df['Início'] = pd.to_datetime(df['Início'], format='%d/%m/%y', errors='coerce')
     df['Término'] = pd.to_datetime(df['Término'], format='%d/%m/%y', errors='coerce')
     
+    # Tratar a duração (remover "dias" e converter para float)
+    df['Duracao'] = df['Duração'].str.extract('(\d+)').astype(float)
+    
     st.write("Colunas encontradas no arquivo:", df.columns)  # Para inspecionar as colunas
     st.write("Datas do cronograma:", df[['Início', 'Término']])  # Verificar datas após conversão
     return df
 
 # Função para remover prefixos indesejados das predecessoras
 def remove_prefix(predecessor):
-    # Lista de prefixos indesejados
     prefixes = ['TT', 'TI', 'II']
-    
-    # Verificar se há algum prefixo na predecessora
     for prefix in prefixes:
         if predecessor.startswith(prefix):
-            # Remover o prefixo
             return predecessor[len(prefix):].strip()
     return predecessor.strip()
 
@@ -47,12 +46,11 @@ def calculate_critical_path(df):
             if pd.notna(row['Predecessoras']):
                 predecessoras = str(row['Predecessoras']).split(';')
                 for pred in predecessoras:
-                    # Remover prefixos indesejados e qualquer sufixo de dias
                     pred_clean = remove_prefix(pred.split('-')[0].strip())
                     try:
                         # Verificar se a duração não é nula e está no formato correto
                         duration = int(row['Duração'].split()[0])
-                        if pred_clean:  # Se o valor da predecessora não estiver em branco
+                        if pred_clean:
                             G.add_edge(pred_clean, row['Nome da tarefa'], weight=duration)
                     except ValueError:
                         st.error(f"Duração inválida para a tarefa {row['Nome da tarefa']}: {row['Duração']}")
@@ -61,13 +59,11 @@ def calculate_critical_path(df):
     else:
         st.error("A coluna 'Predecessoras' não foi encontrada no arquivo.")
     
-    # Verificar se o grafo tem nós e arestas
     if len(G.nodes) == 0:
         st.error("O grafo de atividades está vazio. Verifique as predecessoras e a duração das atividades.")
         return []
     
     try:
-        # Tentar calcular o caminho crítico
         critical_path = nx.dag_longest_path(G, weight='weight')
         return critical_path
     except Exception as e:
@@ -80,22 +76,21 @@ def generate_s_curve(df, start_date, end_date):
     df['Término'] = pd.to_datetime(df['Término'])
     
     df['Duracao'] = (df['Término'] - df['Início']).dt.days
-    df['Progresso Diario'] = 1 / df['Duracao']
+    df['Progresso Diario'] = np.where(df['Duracao'] == 0, 0, 1 / df['Duracao'])
     
     # Cria uma timeline semanalmente a partir da data de início até a data final fornecida pelo usuário
     timeline = pd.date_range(start=start_date, end=end_date, freq='W')
     
     progresso_acumulado = []
-    
-    # Acumula o progresso semanal
     for date in timeline:
         progresso_semanal = df.loc[df['Início'] <= date, 'Progresso Diario'].sum()
         progresso_acumulado.append(progresso_semanal)
     
-    st.write("Timeline gerada:", timeline)  # Verificar timeline gerada
-    st.write("Progresso acumulado:", np.cumsum(progresso_acumulado))  # Verificar progresso acumulado
+    # Normalizar o progresso acumulado para 0 a 100%
+    progresso_acumulado_percentual = np.cumsum(progresso_acumulado)
+    progresso_acumulado_percentual = (progresso_acumulado_percentual / progresso_acumulado_percentual[-1]) * 100
     
-    return timeline, np.cumsum(progresso_acumulado)
+    return timeline, progresso_acumulado_percentual
 
 # Função para exportar os dados para Excel
 def export_to_excel(df, caminho_critico, curva_s, timeline, output_path):
@@ -105,23 +100,26 @@ def export_to_excel(df, caminho_critico, curva_s, timeline, output_path):
         critical_path_df = pd.DataFrame(caminho_critico, columns=['Atividades Caminho Critico'])
         critical_path_df.to_excel(writer, sheet_name='Caminho Critico', index=False)
         
-        curva_s_df = pd.DataFrame({'Data': timeline, 'Progresso Acumulado': curva_s})
+        curva_s_df = pd.DataFrame({'Data': timeline, 'Progresso Acumulado (%)': curva_s})
         curva_s_df.to_excel(writer, sheet_name='Curva S', index=False)
 
 # Função para plotar a Curva S
 def plot_s_curve(timeline, curva_s):
     fig, ax = plt.subplots()
-    ax.plot(timeline, curva_s, marker='o', label="Curva S")
+    ax.plot(timeline, curva_s, marker='o', label="Curva S (0 a 100%)")
     
     # Marcar a linha de início do cronograma
     ax.axvline(x=timeline[0], color='green', linestyle='--', label="Início do Cronograma")
     
-    ax.set_title('Curva S - Progresso Acumulado Semanal')
+    # Configurações do gráfico
+    ax.set_title('Curva S - Progresso Acumulado (0 a 100%)')
     ax.set_xlabel('Data')
     ax.set_ylabel('Progresso Acumulado (%)')
+    ax.set_ylim(0, 100)  # Limitar o eixo Y de 0 a 100%
     ax.grid(True)
     plt.xticks(rotation=45)
     plt.legend()
+    
     st.pyplot(fig)
 
 # Interface Streamlit
@@ -142,7 +140,6 @@ if uploaded_file is not None:
     st.write("Caminho Crítico:")
     st.write(caminho_critico)
     
-    # Verificar se a data final é maior que a data inicial
     if end_date <= start_date:
         st.error("A data final do cronograma deve ser posterior à data inicial.")
     else:
