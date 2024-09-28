@@ -20,17 +20,24 @@ def read_excel(file):
     df['Início'] = pd.to_datetime(df['Início'], format='%d/%m/%y', errors='coerce')
     df['Término'] = pd.to_datetime(df['Término'], format='%d/%m/%y', errors='coerce')
     
+    st.write("Colunas encontradas no arquivo:", df.columns)  # Para inspecionar as colunas
     return df
 
-# Funções de cálculo do caminho crítico e da curva S
+# Função para calcular o caminho crítico
 def calculate_critical_path(df):
     G = nx.DiGraph()
-    for i, row in df.iterrows():
-        G.add_edge(row['Nome da tarefa'], row['Dependencia'], weight=row['Duração'])
+    
+    # Verificar se a coluna de dependência existe
+    if 'Dependencia' in df.columns:
+        for i, row in df.iterrows():
+            G.add_edge(row['Nome da tarefa'], row['Dependencia'], weight=row['Duração'])
+    else:
+        st.error("A coluna 'Dependencia' não foi encontrada no arquivo.")
     
     critical_path = nx.dag_longest_path(G, weight='weight')
     return critical_path
 
+# Funções de geração da curva S e exportação
 def generate_s_curve(df, start_date):
     df['Início'] = pd.to_datetime(df['Início'])
     df['Término'] = pd.to_datetime(df['Término'])
@@ -47,7 +54,6 @@ def generate_s_curve(df, start_date):
     
     return timeline, np.cumsum(progresso_acumulado)
 
-# Função para exportar os dados para Excel
 def export_to_excel(df, caminho_critico, curva_s, timeline, output_path):
     with pd.ExcelWriter(output_path) as writer:
         df.to_excel(writer, sheet_name='Cronograma', index=False)
