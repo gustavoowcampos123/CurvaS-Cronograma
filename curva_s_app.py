@@ -188,4 +188,7 @@ if uploaded_file is not None:
         timeline, curva_s, delta = generate_s_curve(df, start_date, end_date)
         
         st.write("Curva S:")
-        plot
+        plot_s_curve(timeline, curva_s)
+        
+        # Exportar o Excel e fornecer o download
+        excel_data = export_to_excel(df, caminho_critico, curva_s, delta, timeline
