@@ -37,23 +37,27 @@ def calculate_critical_path(df):
     critical_path = nx.dag_longest_path(G, weight='weight')
     return critical_path
 
-# Funções de geração da curva S e exportação
-def generate_s_curve(df, start_date):
+# Função para gerar a Curva S baseada em semanas
+def generate_s_curve(df, start_date, end_date):
     df['Início'] = pd.to_datetime(df['Início'])
     df['Término'] = pd.to_datetime(df['Término'])
     
     df['Duracao'] = (df['Término'] - df['Início']).dt.days
     df['Progresso Diario'] = 1 / df['Duracao']
     
-    timeline = pd.date_range(start=start_date, end=df['Término'].max(), freq='W')
+    # Cria uma timeline semanalmente a partir da data de início até a data final fornecida pelo usuário
+    timeline = pd.date_range(start=start_date, end=end_date, freq='W')
+    
     progresso_acumulado = []
     
+    # Acumula o progresso semanal
     for date in timeline:
         progresso_semanal = df.loc[df['Início'] <= date, 'Progresso Diario'].sum()
         progresso_acumulado.append(progresso_semanal)
     
     return timeline, np.cumsum(progresso_acumulado)
 
+# Função para exportar os dados para Excel
 def export_to_excel(df, caminho_critico, curva_s, timeline, output_path):
     with pd.ExcelWriter(output_path) as writer:
         df.to_excel(writer, sheet_name='Cronograma', index=False)
@@ -67,11 +71,17 @@ def export_to_excel(df, caminho_critico, curva_s, timeline, output_path):
 # Função para plotar a Curva S
 def plot_s_curve(timeline, curva_s):
     fig, ax = plt.subplots()
-    ax.plot(timeline, curva_s, marker='o')
-    ax.set_title('Curva S')
+    ax.plot(timeline, curva_s, marker='o', label="Curva S")
+    
+    # Marcar a linha de início do cronograma
+    ax.axvline(x=timeline[0], color='green', linestyle='--', label="Início do Cronograma")
+    
+    ax.set_title('Curva S - Progresso Acumulado Semanal')
     ax.set_xlabel('Data')
     ax.set_ylabel('Progresso Acumulado (%)')
     ax.grid(True)
+    plt.xticks(rotation=45)
+    plt.legend()
     st.pyplot(fig)
 
 # Interface Streamlit
@@ -80,6 +90,7 @@ st.title('Gerador de Curva S e Caminho Crítico')
 uploaded_file = st.file_uploader("Escolha o arquivo Excel do cronograma", type="xlsx")
 
 start_date = st.date_input("Selecione a data de início do projeto")
+end_date = st.date_input("Selecione a data final do cronograma")
 
 if uploaded_file is not None:
     df = read_excel(uploaded_file)
@@ -91,12 +102,13 @@ if uploaded_file is not None:
     st.write("Caminho Crítico:")
     st.write(caminho_critico)
     
-    timeline, curva_s = generate_s_curve(df, start_date)
-    
-    st.write("Curva S:")
-    plot_s_curve(timeline, curva_s)
-    
-    if st.button("Exportar Cronograma com Curva S"):
-        output_path = 'cronograma_com_curva_s.xlsx'
-        export_to_excel(df, caminho_critico, curva_s, timeline, output_path)
-        st.success(f"Arquivo exportado com sucesso! Baixe aqui: [Download {output_path}]({output_path})")
+    if end_date and start_date:
+        timeline, curva_s = generate_s_curve(df, start_date, end_date)
+        
+        st.write("Curva S:")
+        plot_s_curve(timeline, curva_s)
+        
+        if st.button("Exportar Cronograma com Curva S"):
+            output_path = 'cronograma_com_curva_s.xlsx'
+            export_to_excel(df, caminho_critico, curva_s, timeline, output_path)
+            st.success(f"Arquivo exportado com sucesso! Baixe aqui: [Download {output_path}]({output_path})")
