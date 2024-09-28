@@ -172,6 +172,7 @@ end_date = st.text_input("Selecione a data final do cronograma (DD/MM/AAAA)", pl
 
 if uploaded_file is not None and start_date and end_date:
     try:
+        # Converter datas para o formato correto
         start_date = pd.to_datetime(start_date, format='%d/%m/%Y')
         end_date = pd.to_datetime(end_date, format='%d/%m/%Y')
 
@@ -187,21 +188,10 @@ if uploaded_file is not None and start_date and end_date:
         if end_date <= start_date:
             st.error("A data final do cronograma deve ser posterior à data inicial.")
         else:
-                        timeline, curva_s, delta = generate_s_curve(df, start_date, end_date)
+            timeline, curva_s, delta = generate_s_curve(df, start_date, end_date)
             
             st.write("Curva S:")
             plot_s_curve(timeline, curva_s)
             
             # Exportar o Excel e fornecer o download
-            excel_data = export_to_excel(df, caminho_critico, curva_s, delta, timeline)
-            
-            # Botão de download do arquivo Excel
-            st.download_button(
-                label="Baixar Cronograma com Curva S",
-                data=excel_data.getvalue(),
-                file_name="cronograma_com_curva_s.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
-    except ValueError:
-        st.error("Por favor, insira as datas no formato DD/MM/AAAA.")
-
+            excel_data = export_to_excel(df, caminho_critico, curva_s, delta)
