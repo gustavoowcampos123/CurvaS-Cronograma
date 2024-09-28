@@ -27,8 +27,6 @@ def read_excel(file):
     # Tratar a duração (remover "dias" e converter para float)
     df['Duracao'] = df['Duração'].str.extract('(\d+)').astype(float)
     
-    st.write("Colunas encontradas no arquivo:", df.columns)
-    st.write("Datas do cronograma:", df[['Início', 'Término']])
     return df
 
 # Função para remover prefixos indesejados das predecessoras
