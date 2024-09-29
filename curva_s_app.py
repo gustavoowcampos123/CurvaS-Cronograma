@@ -15,6 +15,14 @@ import datetime
 def clean_weekday_abbreviation(date_str):
     return date_str.split(' ', 1)[1] if isinstance(date_str, str) else date_str
 
+# Função para remover prefixos indesejados das predecessoras
+def remove_prefix(predecessor):
+    prefixes = ['TT', 'TI', 'II']
+    for prefix in prefixes:
+        if predecessor.startswith(prefix):
+            return predecessor[len(prefix):].strip()
+    return predecessor.strip()
+
 # Função para ler o arquivo Excel e tratar as colunas de data
 def read_excel(file):
     df = pd.read_excel(file)
@@ -185,7 +193,7 @@ if uploaded_file is not None and start_date and end_date:
         
             atividades_maior_15_dias, atividades_sem_predecessora, caminho_critico = calcular_caminho_critico_maior_que_15_dias(df)
 
-            # Expander para "Atividades sem predecessoras"
+                   # Expander para "Atividades sem predecessoras"
             with st.expander("Atividades sem Predecessoras"):
                 if atividades_sem_predecessora:
                     st.write("Atividades sem predecessoras:")
@@ -194,7 +202,7 @@ if uploaded_file is not None and start_date and end_date:
                 else:
                     st.write("Nenhuma atividade sem predecessoras encontrada.")
 
-                       # Expander para "Caminho Crítico"
+            # Expander para "Caminho Crítico"
             with st.expander("Caminho Crítico"):
                 if atividades_maior_15_dias.empty:
                     st.write("Nenhuma atividade com mais de 15 dias de duração no caminho crítico.")
@@ -239,4 +247,3 @@ if uploaded_file is not None and start_date and end_date:
 
     except ValueError as e:
         st.error(f"Erro ao processar os dados: {e}")
-
