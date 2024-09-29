@@ -111,6 +111,28 @@ def gerar_relatorio_pdf(df, caminho_critico, atividades_sem_predecessora, ativid
 def calcular_numero_semana(timeline, start_date):
     return [(date - start_date).days // 7 + 1 for date in timeline]
 
+# Função para gerar a Curva S
+def generate_s_curve(df, start_date, end_date):
+    df['Início'] = pd.to_datetime(df['Início'])
+    df['Término'] = pd.to_datetime(df['Término'])
+    
+    df['Duracao'] = (df['Término'] - df['Início']).dt.days
+    df['Progresso Diario'] = np.where(df['Duracao'] == 0, 0, 1 / df['Duracao'])
+    
+    timeline = pd.date_range(start=start_date, end=end_date, freq='W')
+    
+    progresso_acumulado = []
+    for date in timeline:
+        progresso_semanal = df.loc[df['Início'] <= date, 'Progresso Diario'].sum()
+        progresso_acumulado.append(progresso_semanal)
+    
+    progresso_acumulado_percentual = np.cumsum(progresso_acumulado)
+    progresso_acumulado_percentual = (progresso_acumulado_percentual / progresso_acumulado_percentual[-1]) * 100
+    
+    delta = np.diff(progresso_acumulado_percentual, prepend=0)
+    
+    return timeline, progresso_acumulado_percentual, delta
+
 # Função para gerar alerta de atraso
 def gerar_alerta_atraso(df):
     data_atual = pd.Timestamp.today().normalize()  # Data de hoje
@@ -193,7 +215,7 @@ if uploaded_file is not None and start_date and end_date:
         
             atividades_maior_15_dias, atividades_sem_predecessora, caminho_critico = calcular_caminho_critico_maior_que_15_dias(df)
 
-                   # Expander para "Atividades sem predecessoras"
+            # Expander para "Atividades sem predecessoras"
             with st.expander("Atividades sem Predecessoras"):
                 if atividades_sem_predecessora:
                     st.write("Atividades sem predecessoras:")
@@ -247,3 +269,4 @@ if uploaded_file is not None and start_date and end_date:
 
     except ValueError as e:
         st.error(f"Erro ao processar os dados: {e}")
+
