@@ -129,7 +129,7 @@ def gerar_relatorio_pdf(df, caminho_critico, atividades_sem_predecessora, ativid
 
     # Adicionar atividades sem predecessoras
     pdf.cell(200, 10, txt="Atividades Sem Predecessoras", ln=True)
-    atividades_sem_predecessora_df = pd.DataFrame(atividades_sem_predecessora)  # Corrigir: converter lista em DataFrame
+    atividades_sem_predecessora_df = pd.DataFrame(atividades_sem_predecessora)
     for _, row in atividades_sem_predecessora_df.iterrows():
         pdf.cell(200, 10, txt=row['Nome da tarefa'], ln=True)
 
@@ -139,9 +139,9 @@ def gerar_relatorio_pdf(df, caminho_critico, atividades_sem_predecessora, ativid
         for _, row in atividades_atrasadas.iterrows():
             pdf.cell(200, 10, txt=row['Nome da tarefa'], ln=True)
 
-    # Salvar o relatório em PDF
+    # Salvar o relatório em PDF no objeto BytesIO
     pdf_output = io.BytesIO()
-    pdf.output(pdf_output, 'F')
+    pdf.output(pdf_output)  # Remova o argumento 'F'
     pdf_output.seek(0)
 
     # Remover o arquivo temporário de gráfico
@@ -149,6 +149,7 @@ def gerar_relatorio_pdf(df, caminho_critico, atividades_sem_predecessora, ativid
         os.remove(curva_s_path)
     
     return pdf_output
+
 
 # Função para calcular o número da semana a partir de uma data inicial
 def calcular_numero_semana(timeline, start_date):
