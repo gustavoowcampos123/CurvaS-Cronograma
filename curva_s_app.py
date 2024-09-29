@@ -180,17 +180,17 @@ if uploaded_file is not None and start_date and end_date:
     
         atividades_maior_15_dias, atividades_sem_predecessora, caminho_critico = calcular_caminho_critico_maior_que_15_dias(df)
 
-        # Botão de expansão para "Atividades sem predecessoras"
-        if st.checkbox("Mostrar Atividades sem Predecessoras"):
+        # Expander para "Atividades sem predecessoras"
+        with st.expander("Atividades sem Predecessoras"):
             if atividades_sem_predecessora:
                 st.write("Atividades sem predecessoras:")
                 atividades_sem_predecessora_df = pd.DataFrame(atividades_sem_predecessora)
-                st.table(atividades_sem_predecessora_df[['Nome da tarefa', 'Início', 'Término', 'Duracao']])
+                s                st.table(atividades_sem_predecessora_df[['Nome da tarefa', 'Início', 'Término', 'Duracao']])
             else:
                 st.write("Nenhuma atividade sem predecessoras encontrada.")
 
-                # Botão de expansão para "Caminho Crítico"
-        if st.checkbox("Mostrar Caminho Crítico"):
+        # Expander para "Caminho Crítico"
+        with st.expander("Caminho Crítico"):
             if atividades_maior_15_dias.empty:
                 st.write("Nenhuma atividade com mais de 15 dias de duração no caminho crítico.")
             else:
