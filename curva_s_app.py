@@ -193,11 +193,11 @@ if uploaded_file is not None and start_date and end_date:
 
         if end_date <= start_date:
             st.error("A data final do cronograma deve ser posterior à data inicial.")
-        else:
-                       timeline, curva_s, delta = generate_s_curve(df, start_date, end_date)
+                else:
+            timeline, curva_s, delta = generate_s_curve(df, start_date, end_date)
             
-st.write("Curva S:")
-plot_s_curve(timeline, curva_s)
+            st.write("Curva S:")
+            plot_s_curve(timeline, curva_s)
             
             # Exportar o Excel e fornecer o download
             excel_data = export_to_excel(df, caminho_critico, curva_s, delta, timeline)
@@ -212,4 +212,4 @@ plot_s_curve(timeline, curva_s)
 
     except ValueError:
         st.error("Por favor, insira as datas no formato DD/MM/AAAA.")
-
+   
