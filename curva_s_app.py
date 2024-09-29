@@ -8,7 +8,21 @@ from geopy.geocoders import Nominatim
 
 # Lista de cidades do estado de São Paulo com coordenadas
 coordenadas = {
-    # Adicione suas cidades e coordenadas aqui
+    'São Paulo': (-23.5505, -46.6333),
+    'Campinas': (-22.9056, -47.0608),
+    'São Bernardo do Campo': (-23.6821, -46.5657),
+    'São José dos Campos': (-23.2237, -45.9009),
+    'Sorocaba': (-23.5012, -47.4875),
+    'Ribeirão Preto': (-21.1730, -47.8103),
+    'Santo André': (-23.6637, -46.5383),
+    'Osasco': (-23.5329, -46.7918),
+    'Diadema': (-23.6854, -46.6203),
+    'Bauru': (-22.3034, -49.0500),
+    'Piracicaba': (-23.7272, -47.6500),
+    'Jundiaí': (-23.1856, -46.8978),
+    'Taubaté': (-22.9783, -45.5589),
+    'Limeira': (-22.5584, -47.4895),
+    'Mauá': (-23.6671, -46.4613),
 }
 
 def obter_coordenadas(cidade):
