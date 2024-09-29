@@ -116,33 +116,41 @@ def gerar_relatorio_pdf(df, caminho_critico, atividades_sem_predecessora, ativid
     pdf.add_page()
     pdf.set_font("Arial", size=12)
 
+    # Título do relatório
     pdf.cell(200, 10, txt="Relatório Detalhado do Projeto", ln=True, align="C")
+    pdf.ln(10)  # Espaço entre título e próximo conteúdo
 
     # Adicionar Curva S
     pdf.cell(200, 10, txt="Curva S", ln=True)
-    pdf.image(curva_s_path, x=10, y=30, w=190)
+    pdf.image(curva_s_path, x=10, y=40, w=190)  # Ajustar a posição e tamanho da imagem
+    pdf.ln(70)  # Adicionar espaçamento abaixo da imagem
 
     # Adicionar caminho crítico
     pdf.cell(200, 10, txt="Caminho Crítico", ln=True)
+    pdf.ln(5)  # Espaçamento
     for atividade in caminho_critico:
         pdf.cell(200, 10, txt=atividade, ln=True)
+    pdf.ln(10)  # Espaçamento entre seções
 
     # Adicionar atividades sem predecessoras
     pdf.cell(200, 10, txt="Atividades Sem Predecessoras", ln=True)
     atividades_sem_predecessora_df = pd.DataFrame(atividades_sem_predecessora)
+    pdf.ln(5)  # Espaçamento
     for _, row in atividades_sem_predecessora_df.iterrows():
         pdf.cell(200, 10, txt=row['Nome da tarefa'], ln=True)
+    pdf.ln(10)  # Espaçamento entre seções
 
     # Adicionar atividades atrasadas
     if not atividades_atrasadas.empty:
         pdf.cell(200, 10, txt="Atividades Atrasadas", ln=True)
+        pdf.ln(5)  # Espaçamento
         for _, row in atividades_atrasadas.iterrows():
             pdf.cell(200, 10, txt=row['Nome da tarefa'], ln=True)
+    pdf.ln(10)  # Espaçamento final
 
     # Salvar o relatório em PDF no objeto BytesIO
     pdf_output = io.BytesIO()
-    pdf.output(dest='S').encode('latin1')  # Corrigido: escreve diretamente no fluxo de bytes
-    pdf_output.write(pdf.output(dest='S').encode('latin1'))  # Corrige a gravação do PDF
+    pdf.output(pdf_output)  # Salva diretamente no fluxo de bytes
     pdf_output.seek(0)
 
     # Remover o arquivo temporário de gráfico
@@ -150,6 +158,7 @@ def gerar_relatorio_pdf(df, caminho_critico, atividades_sem_predecessora, ativid
         os.remove(curva_s_path)
     
     return pdf_output
+
 
 
 # Função para calcular o número da semana a partir de uma data inicial
