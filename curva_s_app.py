@@ -129,7 +129,8 @@ def gerar_relatorio_pdf(df, caminho_critico, atividades_sem_predecessora, ativid
 
     # Adicionar atividades sem predecessoras
     pdf.cell(200, 10, txt="Atividades Sem Predecessoras", ln=True)
-    for _, row in atividades_sem_predecessora.iterrows():
+    atividades_sem_predecessora_df = pd.DataFrame(atividades_sem_predecessora)  # Corrigir: converter lista em DataFrame
+    for _, row in atividades_sem_predecessora_df.iterrows():
         pdf.cell(200, 10, txt=row['Nome da tarefa'], ln=True)
 
     # Adicionar atividades atrasadas
@@ -199,7 +200,6 @@ def calcular_caminho_critico_maior_que_15_dias(df):
 
     return atividades_mais_15_dias[['Nome da tarefa', 'Duracao', 'Início', 'Término']], atividades_sem_predecessora, caminho_critico
 
-# Função para calcular o caminho crítico
 # Função para calcular o caminho crítico
 def calculate_critical_path(df):
     G = nx.DiGraph()
