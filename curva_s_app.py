@@ -40,6 +40,48 @@ def read_excel(file):
     
     return df
 
+# Função para exportar os dados para Excel com gráfico
+def export_to_excel(df, caminho_critico, curva_s, delta, timeline):
+    output = io.BytesIO()
+    
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'Curva S'
+    
+    # Criar um DataFrame para Curva S
+    curva_s_df = pd.DataFrame({'Data': timeline, 'Progresso Acumulado (%)': curva_s, 'Delta': delta})
+    
+    # Adicionar os dados da Curva S à planilha
+    for r in dataframe_to_rows(curva_s_df, index=False, header=True):
+        ws.append(r)
+    
+    # Criar o gráfico de linha para a Curva S
+    chart = LineChart()
+    chart.title = "Curva S - Progresso Acumulado"
+    chart.y_axis.title = 'Progresso Acumulado (%)'
+    chart.x_axis.title = 'Data'
+    
+    data = Reference(ws, min_col=2, min_row=2, max_row=len(curva_s_df) + 1, max_col=2)
+    chart.add_data(data, titles_from_data=True)
+    
+    ws.add_chart(chart, "E5")
+    
+    # Criar outra aba para o cronograma
+    cronograma_ws = wb.create_sheet(title="Cronograma")
+    for r in dataframe_to_rows(df, index=False, header=True):
+        cronograma_ws.append(r)
+    
+    # Criar outra aba para o caminho crítico
+    caminho_critico_ws = wb.create_sheet(title="Caminho Crítico")
+    critical_path_df = pd.DataFrame(caminho_critico, columns=['Atividades Caminho Crítico'])
+    for r in dataframe_to_rows(critical_path_df, index=False, header=True):
+        caminho_critico_ws.append(r)
+    
+    wb.save(output)
+    output.seek(0)
+    
+    return output
+
 # Função para gerar a Curva S e salvar como PNG
 def plot_s_curve(timeline, curva_s, start_date):
     semanas = calcular_numero_semana(timeline, start_date)
@@ -157,6 +199,7 @@ def calcular_caminho_critico_maior_que_15_dias(df):
 
     return atividades_mais_15_dias[['Nome da tarefa', 'Duracao', 'Início', 'Término']], atividades_sem_predecessora, caminho_critico
 
+# Função para calcular o caminho crítico
 # Função para calcular o caminho crítico
 def calculate_critical_path(df):
     G = nx.DiGraph()
