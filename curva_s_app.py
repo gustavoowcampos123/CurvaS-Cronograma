@@ -60,22 +60,16 @@ def calculate_critical_path(df):
     else:
         st.error("A coluna 'Predecessoras' não foi encontrada no arquivo.")
     
-    # Verificar se há atividades sem predecessoras e exibi-las em uma tabela
-    if atividades_sem_predecessora:
-        st.write("Atividades sem predecessoras:")
-        atividades_sem_predecessora_df = pd.DataFrame(atividades_sem_predecessora)
-        st.table(atividades_sem_predecessora_df[['Nome da tarefa', 'Início', 'Término', 'Duracao']])
-    
     if len(G.nodes) == 0:
         st.error("O grafo de atividades está vazio. Verifique as predecessoras e a duração das atividades.")
-        return []
+        return [], atividades_sem_predecessora
 
     try:
         critical_path = nx.dag_longest_path(G, weight='weight')
-        return critical_path
+        return critical_path, atividades_sem_predecessora
     except Exception as e:
         st.error(f"Erro ao calcular o caminho crítico: {e}")
-        return []
+        return [], atividades_sem_predecessora
 
 # Função para gerar a Curva S
 def generate_s_curve(df, start_date, end_date):
@@ -138,16 +132,16 @@ def export_to_excel(df, caminho_critico, curva_s, delta, timeline):
 
 # Função para calcular o caminho crítico e listar as atividades com duração maior que 15 dias
 def calcular_caminho_critico_maior_que_15_dias(df):
-    caminho_critico = calculate_critical_path(df)
+    caminho_critico, atividades_sem_predecessora = calculate_critical_path(df)
 
     if not caminho_critico:
-        return [], "Caminho crítico não encontrado"
+        return [], atividades_sem_predecessora, "Caminho crítico não encontrado"
 
     # Filtrar atividades no caminho crítico com duração superior a 15 dias
     atividades_caminho_critico = df[df['Nome da tarefa'].isin(caminho_critico)]
     atividades_mais_15_dias = atividades_caminho_critico[atividades_caminho_critico['Duracao'] > 15]
 
-    return atividades_mais_15_dias[['Nome da tarefa', 'Duracao', 'Início', 'Término']], caminho_critico
+    return atividades_mais_15_dias[['Nome da tarefa', 'Duracao', 'Início', 'Término']], atividades_sem_predecessora, caminho_critico
 
 # Função para plotar a Curva S
 def plot_s_curve(timeline, curva_s):
@@ -184,12 +178,24 @@ if uploaded_file is not None and start_date and end_date:
         st.write("Dados do cronograma:")
         st.dataframe(df)
     
-        caminho_critico = calculate_critical_path(df)
-        st.write("Caminho Crítico:")
-        
-        # Mostrar as atividades no caminho crítico com duração maior que 15 dias
-        atividades_maior_15_dias, caminho_critico = calcular_caminho_critico_maior_que_15_dias(df)
-        st.write(atividades_maior_15_dias)
+        atividades_maior_15_dias, atividades_sem_predecessora, caminho_critico = calcular_caminho_critico_maior_que_15_dias(df)
+
+        # Botão de expansão para "Atividades sem predecessoras"
+        if st.checkbox("Mostrar Atividades sem Predecessoras"):
+            if atividades_sem_predecessora:
+                st.write("Atividades sem predecessoras:")
+                atividades_sem_predecessora_df = pd.DataFrame(atividades_sem_predecessora)
+                st.table(atividades_sem_predecessora_df[['Nome da tarefa', 'Início', 'Término', 'Duracao']])
+            else:
+                st.write("Nenhuma atividade sem predecessoras encontrada.")
+
+                # Botão de expansão para "Caminho Crítico"
+        if st.checkbox("Mostrar Caminho Crítico"):
+            if atividades_maior_15_dias.empty:
+                st.write("Nenhuma atividade com mais de 15 dias de duração no caminho crítico.")
+            else:
+                st.write("Atividades no caminho crítico com mais de 15 dias de duração:")
+                st.table(atividades_maior_15_dias)
 
         if end_date <= start_date:
             st.error("A data final do cronograma deve ser posterior à data inicial.")
@@ -212,4 +218,4 @@ if uploaded_file is not None and start_date and end_date:
 
     except ValueError:
         st.error("Por favor, insira as datas no formato DD/MM/AAAA.")
-   
+
