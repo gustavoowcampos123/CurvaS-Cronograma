@@ -1,5 +1,6 @@
+fpdf==1.7.2
+openpyxl
 pandas
 matplotlib
 networkx
-openpyxl
-streamlit
+numpy
