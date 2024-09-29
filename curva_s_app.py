@@ -185,7 +185,7 @@ if uploaded_file is not None and start_date and end_date:
             if atividades_sem_predecessora:
                 st.write("Atividades sem predecessoras:")
                 atividades_sem_predecessora_df = pd.DataFrame(atividades_sem_predecessora)
-                s                st.table(atividades_sem_predecessora_df[['Nome da tarefa', 'Início', 'Término', 'Duracao']])
+                st.table(atividades_sem_predecessora_df[['Nome da tarefa', 'Início', 'Término', 'Duracao']])
             else:
                 st.write("Nenhuma atividade sem predecessoras encontrada.")
 
