@@ -287,8 +287,14 @@ if uploaded_file is not None and start_date and end_date:
                     st.write("Atividades no caminho crítico com mais de 15 dias de duração:")
                     st.table(atividades_maior_15_dias)
 
-            # Gerar alerta de atividades atrasadas
-            gerar_alerta_atraso(df)
+            # Expander para "Atividades Atrasadas" com seta
+            with st.expander("▶ Atividades Atrasadas"):  # Seta aponta para a direita antes de expandir
+                if not df[df['Término'] < pd.Timestamp.today().normalize()].empty:
+                    st.warning("Atividades Atrasadas:")
+                    atividades_atrasadas = df[df['Término'] < pd.Timestamp.today().normalize()]
+                    st.table(atividades_atrasadas[['Nome da tarefa', 'Início', 'Término', 'Duracao']])
+                else:
+                    st.success("Nenhuma atividade atrasada.")
 
             if end_date <= start_date:
                 st.error("A data final do cronograma deve ser posterior à data inicial.")
@@ -324,4 +330,3 @@ if uploaded_file is not None and start_date and end_date:
 
     except ValueError as e:
         st.error(f"Erro ao processar os dados: {e}")
-
