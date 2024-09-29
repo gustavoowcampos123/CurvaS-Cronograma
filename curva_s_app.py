@@ -193,7 +193,7 @@ if uploaded_file is not None and start_date and end_date:
 
         if end_date <= start_date:
             st.error("A data final do cronograma deve ser posterior à data inicial.")
-                else:
+        else:
             timeline, curva_s, delta = generate_s_curve(df, start_date, end_date)
             
             st.write("Curva S:")
