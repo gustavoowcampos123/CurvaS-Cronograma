@@ -49,11 +49,11 @@ def calculate_critical_path(df):
                 for pred in predecessoras:
                     pred_clean = remove_prefix(pred.split('-')[0].strip())
                     try:
-                        duration = int(row['Duração'].split()[0])
+                        duration = int(row['Duracao'])
                         if pred_clean:
                             G.add_edge(pred_clean, row['Nome da tarefa'], weight=duration)
                     except ValueError:
-                        st.error(f"Duração inválida para a tarefa {row['Nome da tarefa']}: {row['Duração']} (linha {i+1})")
+                        st.error(f"Duração inválida para a tarefa {row['Nome da tarefa']}: {row['Duracao']} (linha {i+1})")
             else:
                 # Adiciona as atividades sem predecessora à lista
                 atividades_sem_predecessora.append(row)
@@ -64,12 +64,12 @@ def calculate_critical_path(df):
     if atividades_sem_predecessora:
         st.write("Atividades sem predecessoras:")
         atividades_sem_predecessora_df = pd.DataFrame(atividades_sem_predecessora)
-        st.table(atividades_sem_predecessora_df[['Nome da tarefa', 'Início', 'Término', 'Duração']])
+        st.table(atividades_sem_predecessora_df[['Nome da tarefa', 'Início', 'Término', 'Duracao']])
     
     if len(G.nodes) == 0:
         st.error("O grafo de atividades está vazio. Verifique as predecessoras e a duração das atividades.")
         return []
-    
+
     try:
         critical_path = nx.dag_longest_path(G, weight='weight')
         return critical_path
@@ -136,6 +136,21 @@ def export_to_excel(df, caminho_critico, curva_s, delta, timeline):
     
     return output
 
+# Função para calcular o caminho crítico e listar as atividades com maior duração
+def calcular_caminho_critico_com_maior_duracao(df):
+    caminho_critico = calculate_critical_path(df)
+
+    if not caminho_critico:
+        return [], "Caminho crítico não encontrado"
+
+    # Filtrar atividades no caminho crítico
+    atividades_caminho_critico = df[df['Nome da tarefa'].isin(caminho_critico)]
+
+    # Ordenar as atividades por duração, de maior para menor
+    atividades_ordenadas = atividades_caminho_critico.sort_values(by='Duracao', ascending=False)
+
+    return atividades_ordenadas[['Nome da tarefa', 'Duracao', 'Início', 'Término']], caminho_critico
+
 # Função para plotar a Curva S
 def plot_s_curve(timeline, curva_s):
     fig, ax = plt.subplots()
@@ -174,9 +189,14 @@ if uploaded_file is not None and start_date and end_date:
         caminho_critico = calculate_critical_path(df)
         st.write("Caminho Crítico:")
         st.write(caminho_critico)
+        
+        # Mostrar as atividades no caminho crítico, ordenadas por duração
+        atividades_maior_duracao, _ = calcular_caminho_critico_com_maior_duracao(df)
+        st.write("Atividades no caminho crítico ordenadas por duração:")
+        st.table(atividades_maior_duracao)
     
         if end_date <= start_date:
-            st.error("A data final do cronograma deve ser posterior à data inicial.")
+                        st.error("A data final do cronograma deve ser posterior à data inicial.")
         else:
             timeline, curva_s, delta = generate_s_curve(df, start_date, end_date)
             
@@ -196,3 +216,4 @@ if uploaded_file is not None and start_date and end_date:
 
     except ValueError:
         st.error("Por favor, insira as datas no formato DD/MM/AAAA.")
+
