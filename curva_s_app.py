@@ -181,8 +181,8 @@ if uploaded_file is not None and start_date and end_date:
 
         df = read_excel(uploaded_file)
     
-               st.write("Dados do cronograma:")
-                st.dataframe(df)
+        st.write("Dados do cronograma:")
+        st.dataframe(df)
     
         caminho_critico = calculate_critical_path(df)
         st.write("Caminho Crítico:")
@@ -194,7 +194,7 @@ if uploaded_file is not None and start_date and end_date:
         if end_date <= start_date:
             st.error("A data final do cronograma deve ser posterior à data inicial.")
         else:
-            timeline, curva_s, delta = generate_s_curve(df, start_date, end_date)
+                       timeline, curva_s, delta = generate_s_curve(df, start_date, end_date)
             
             st.write("Curva S:")
             plot_s_curve(timeline, curva_s)
