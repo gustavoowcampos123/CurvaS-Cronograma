@@ -109,7 +109,7 @@ def export_to_excel(df, caminho_critico, curva_s, delta, timeline):
     chart = LineChart()
     chart.title = "Curva S - Progresso Acumulado"
     chart.y_axis.title = 'Progresso Acumulado (%)'
-    chart.x_axis.title = 'Data'
+    chart.x_axis.title = 'Número da Semana'
     
     data = Reference(ws, min_col=2, min_row=2, max_row=len(curva_s_df) + 1, max_col=2)
     chart.add_data(data, titles_from_data=True)
@@ -129,20 +129,6 @@ def export_to_excel(df, caminho_critico, curva_s, delta, timeline):
     output.seek(0)
     
     return output
-
-# Função para calcular o caminho crítico e listar as atividades com duração maior que 15 dias
-def calcular_caminho_critico_maior_que_15_dias(df):
-    caminho_critico, atividades_sem_predecessora = calculate_critical_path(df)
-
-    if not caminho_critico:
-        return [], atividades_sem_predecessora, "Caminho crítico não encontrado"
-
-    # Filtrar atividades no caminho crítico com duração superior a 15 dias
-    atividades_caminho_critico = df[df['Nome da tarefa'].isin(caminho_critico)]
-    atividades_mais_15_dias = atividades_caminho_critico[atividades_caminho_critico['Duracao'] > 15]
-
-    return atividades_mais_15_dias[['Nome da tarefa', 'Duracao', 'Início', 'Término']], atividades_sem_predecessora, caminho_critico
-
 
 # Função para calcular o número da semana a partir de uma data inicial
 def calcular_numero_semana(timeline, start_date):
@@ -168,12 +154,6 @@ def plot_s_curve(timeline, curva_s, start_date):
 
     plt.legend()
     st.pyplot(fig)
-
-# Interface Streamlit (continuação)
-
-
-# Interface Streamlit (continuação)
-
 
 # Interface Streamlit
 st.title('Gerador de Curva S e Caminho Crítico')
@@ -219,7 +199,7 @@ if uploaded_file is not None and start_date and end_date:
             timeline, curva_s, delta = generate_s_curve(df, start_date, end_date)
             
             st.write("Curva S:")
-            plot_s_curve(timeline, curva_s)
+            plot_s_curve(timeline, curva_s, start_date)
             
             # Exportar o Excel e fornecer o download
             excel_data = export_to_excel(df, caminho_critico, curva_s, delta, timeline)
