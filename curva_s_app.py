@@ -136,20 +136,18 @@ def export_to_excel(df, caminho_critico, curva_s, delta, timeline):
     
     return output
 
-# Função para calcular o caminho crítico e listar as atividades com maior duração
-def calcular_caminho_critico_com_maior_duracao(df):
+# Função para calcular o caminho crítico e listar as atividades com duração maior que 15 dias
+def calcular_caminho_critico_maior_que_15_dias(df):
     caminho_critico = calculate_critical_path(df)
 
     if not caminho_critico:
         return [], "Caminho crítico não encontrado"
 
-    # Filtrar atividades no caminho crítico
+    # Filtrar atividades no caminho crítico com duração superior a 15 dias
     atividades_caminho_critico = df[df['Nome da tarefa'].isin(caminho_critico)]
+    atividades_mais_15_dias = atividades_caminho_critico[atividades_caminho_critico['Duracao'] > 15]
 
-    # Ordenar as atividades por duração, de maior para menor
-    atividades_ordenadas = atividades_caminho_critico.sort_values(by='Duracao', ascending=False)
-
-    return atividades_ordenadas[['Nome da tarefa', 'Duracao', 'Início', 'Término']], caminho_critico
+    return atividades_mais_15_dias[['Nome da tarefa', 'Duracao', 'Início', 'Término']], caminho_critico
 
 # Função para plotar a Curva S
 def plot_s_curve(timeline, curva_s):
@@ -190,13 +188,13 @@ if uploaded_file is not None and start_date and end_date:
         st.write("Caminho Crítico:")
         st.write(caminho_critico)
         
-        # Mostrar as atividades no caminho crítico, ordenadas por duração
-        atividades_maior_duracao, _ = calcular_caminho_critico_com_maior_duracao(df)
-        st.write("Atividades no caminho crítico ordenadas por duração:")
-        st.table(atividades_maior_duracao)
-    
+        # Mostrar as atividades no caminho crítico com duração maior que 15 dias
+                # Exibir as atividades com duração superior a 15 dias
+        st.write("Atividades no caminho crítico com mais de 15 dias de duração:")
+        st.table(atividades_maior_15_dias)
+
         if end_date <= start_date:
-                        st.error("A data final do cronograma deve ser posterior à data inicial.")
+            st.error("A data final do cronograma deve ser posterior à data inicial.")
         else:
             timeline, curva_s, delta = generate_s_curve(df, start_date, end_date)
             
