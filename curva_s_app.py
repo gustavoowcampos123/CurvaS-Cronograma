@@ -144,24 +144,33 @@ def calcular_caminho_critico_maior_que_15_dias(df):
     return atividades_mais_15_dias[['Nome da tarefa', 'Duracao', 'Início', 'Término']], atividades_sem_predecessora, caminho_critico
 
 
-# Função para plotar a Curva S com escala semanal
-def plot_s_curve(timeline, curva_s):
+# Função para calcular o número da semana a partir de uma data inicial
+def calcular_numero_semana(timeline, start_date):
+    return [(date - start_date).days // 7 + 1 for date in timeline]
+
+# Função para plotar a Curva S com o número da semana no eixo X
+def plot_s_curve(timeline, curva_s, start_date):
+    semanas = calcular_numero_semana(timeline, start_date)
+    
     fig, ax = plt.subplots()
-    ax.plot(timeline, curva_s, marker='o', label="Curva S (0 a 100%)")
-    ax.axvline(x=timeline[0], color='green', linestyle='--', label="Início do Cronograma")
+    ax.plot(semanas, curva_s, marker='o', label="Curva S (0 a 100%)")
+    ax.axvline(x=semanas[0], color='green', linestyle='--', label="Início do Cronograma")
     
     ax.set_title('Curva S - Progresso Acumulado (0 a 100%)')
-    ax.set_xlabel('Data')
+    ax.set_xlabel('Número da Semana')
     ax.set_ylabel('Progresso Acumulado (%)')
     ax.set_ylim(0, 100)
     ax.grid(True)
 
-    # Definir as marcações no eixo X para serem semanais
-    ax.set_xticks(timeline)
-    plt.xticks(rotation=45)  # Girar os rótulos das datas para melhor legibilidade
+    # Definir os números das semanas como as marcações no eixo X
+    ax.set_xticks(semanas)
+    plt.xticks(rotation=45)
 
     plt.legend()
     st.pyplot(fig)
+
+# Interface Streamlit (continuação)
+
 
 # Interface Streamlit (continuação)
 
