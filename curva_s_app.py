@@ -150,7 +150,8 @@ def gerar_relatorio_pdf(df, caminho_critico, atividades_sem_predecessora, ativid
 
     # Salvar o relatório em PDF no objeto BytesIO
     pdf_output = io.BytesIO()
-    pdf.output(pdf_output)  # Salva diretamente no fluxo de bytes
+    pdf.output(pdf_output, 'S')  # O parâmetro 'S' retorna o conteúdo como string
+    pdf_output.write(pdf.output(dest='S').encode('latin1'))  # Corrige a gravação do PDF
     pdf_output.seek(0)
 
     # Remover o arquivo temporário de gráfico
