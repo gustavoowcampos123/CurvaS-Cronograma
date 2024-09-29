@@ -103,6 +103,64 @@ def gerar_relatorio_pdf(df, caminho_critico, atividades_sem_predecessora, ativid
 def calcular_numero_semana(timeline, start_date):
     return [(date - start_date).days // 7 + 1 for date in timeline]
 
+# Função para gerar alerta de atraso
+def gerar_alerta_atraso(df):
+    data_atual = pd.Timestamp.today().normalize()  # Data de hoje
+    atividades_atrasadas = df[df['Término'] < data_atual]
+
+    if not atividades_atrasadas.empty:
+        st.warning("Atividades Atrasadas:")
+        st.table(atividades_atrasadas[['Nome da tarefa', 'Início', 'Término', 'Duracao']])
+    else:
+        st.success("Nenhuma atividade atrasada.")
+
+# Função para calcular o caminho crítico e listar as atividades com duração maior que 15 dias
+def calcular_caminho_critico_maior_que_15_dias(df):
+    caminho_critico, atividades_sem_predecessora = calculate_critical_path(df)
+
+    if not caminho_critico:
+        return pd.DataFrame(), atividades_sem_predecessora, caminho_critico
+
+    # Filtrar atividades no caminho crítico com duração superior a 15 dias
+    atividades_caminho_critico = df[df['Nome da tarefa'].isin(caminho_critico)]
+    atividades_mais_15_dias = atividades_caminho_critico[atividades_caminho_critico['Duracao'] > 15]
+
+    return atividades_mais_15_dias[['Nome da tarefa', 'Duracao', 'Início', 'Término']], atividades_sem_predecessora, caminho_critico
+
+# Função para calcular o caminho crítico
+def calculate_critical_path(df):
+    G = nx.DiGraph()
+    atividades_sem_predecessora = []  # Lista para armazenar as atividades sem predecessora
+    
+    if 'Predecessoras' in df.columns:
+        for i, row in df.iterrows():
+            if pd.notna(row['Predecessoras']):
+                predecessoras = str(row['Predecessoras']).split(';')
+                for pred in predecessoras:
+                    pred_clean = remove_prefix(pred.split('-')[0].strip())
+                    try:
+                        duration = int(row['Duracao'])
+                        if pred_clean:
+                            G.add_edge(pred_clean, row['Nome da tarefa'], weight=duration)
+                    except ValueError:
+                        st.error(f"Duração inválida para a tarefa {row['Nome da tarefa']}: {row['Duracao']} (linha {i+1})")
+            else:
+                # Adiciona as atividades sem predecessora à lista
+                atividades_sem_predecessora.append(row)
+    else:
+        st.error("A coluna 'Predecessoras' não foi encontrada no arquivo.")
+    
+    if len(G.nodes) == 0:
+        st.error("O grafo de atividades está vazio. Verifique as predecessoras e a duração das atividades.")
+        return [], atividades_sem_predecessora
+
+    try:
+        critical_path = nx.dag_longest_path(G, weight='weight')
+        return critical_path, atividades_sem_predecessora
+    except Exception as e:
+        st.error(f"Erro ao calcular o caminho crítico: {e}")
+        return [], atividades_sem_predecessora
+
 # Interface Streamlit
 st.title('Gerador de Curva S e Caminho Crítico com Alerta de Atraso e Relatório PDF')
 
@@ -111,7 +169,7 @@ uploaded_file = st.file_uploader("Escolha o arquivo Excel do cronograma", type="
 start_date = st.text_input("Selecione a data de início do projeto (DD/MM/AAAA)", placeholder="DD/MM/AAAA")
 end_date = st.text_input("Selecione a data final do cronograma (DD/MM/AAAA)", placeholder="DD/MM/AAAA")
 
-if uploaded_file is not None:
+if uploaded_file is not None and start_date and end_date:
     try:
         # Verifique se o arquivo foi carregado com sucesso
         if uploaded_file is not None:
@@ -125,11 +183,60 @@ if uploaded_file is not None:
             st.write("Dados do cronograma:")
             st.dataframe(df)
         
-            # Continuar com o restante da lógica para caminho crítico, Curva S, etc.
-            # ...
+            atividades_maior_15_dias, atividades_sem_predecessora, caminho_critico = calcular_caminho_critico_maior_que_15_dias(df)
 
-        else:
-            st.error("Nenhum arquivo foi carregado. Por favor, carregue um arquivo Excel válido.")
-    
+            # Expander para "Atividades sem predecessoras"
+            with st.expander("Atividades sem Predecessoras"):
+                if atividades_sem_predecessora:
+                    st.write("Atividades sem predecessoras:")
+                    atividades_sem_predecessora_df = pd.DataFrame(atividades_sem_predecessora)
+                    st.table(atividades_sem_predecessora_df[['Nome da tarefa', 'Início', 'Término', 'Duracao']])
+                else:
+                    st.write("Nenhuma atividade sem predecessoras encontrada.")
+
+                       # Expander para "Caminho Crítico"
+            with st.expander("Caminho Crítico"):
+                if atividades_maior_15_dias.empty:
+                    st.write("Nenhuma atividade com mais de 15 dias de duração no caminho crítico.")
+                else:
+                    st.write("Atividades no caminho crítico com mais de 15 dias de duração:")
+                    st.table(atividades_maior_15_dias)
+
+            # Gerar alerta de atividades atrasadas
+            gerar_alerta_atraso(df)
+
+            if end_date <= start_date:
+                st.error("A data final do cronograma deve ser posterior à data inicial.")
+            else:
+                # Gerar Curva S
+                timeline, curva_s, delta = generate_s_curve(df, start_date, end_date)
+                
+                st.write("Curva S:")
+                curva_s_path = plot_s_curve(timeline, curva_s, start_date)
+                
+                # Exportar o Excel e fornecer o download
+                excel_data = export_to_excel(df, caminho_critico, curva_s, delta, timeline)
+                
+                # Botão de download do Excel
+                st.download_button(
+                    label="Baixar Cronograma com Curva S",
+                    data=excel_data.getvalue(),
+                    file_name="cronograma_com_curva_s.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+
+                # Gerar relatório em PDF
+                atividades_atrasadas = df[df['Término'] < pd.Timestamp.today().normalize()]
+                pdf_data = gerar_relatorio_pdf(df, caminho_critico, atividades_sem_predecessora, atividades_atrasadas, curva_s_path)
+                
+                # Botão de download do PDF
+                st.download_button(
+                    label="Baixar Relatório em PDF",
+                    data=pdf_data.getvalue(),
+                    file_name="relatorio_projeto.pdf",
+                    mime="application/pdf"
+                )
+
     except ValueError as e:
         st.error(f"Erro ao processar os dados: {e}")
+
