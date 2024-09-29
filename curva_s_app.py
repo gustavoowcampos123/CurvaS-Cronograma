@@ -181,17 +181,15 @@ if uploaded_file is not None and start_date and end_date:
 
         df = read_excel(uploaded_file)
     
-        st.write("Dados do cronograma:")
+               st.write("Dados do cronograma:")
         st.dataframe(df)
     
         caminho_critico = calculate_critical_path(df)
         st.write("Caminho Crítico:")
-        st.write(caminho_critico)
         
         # Mostrar as atividades no caminho crítico com duração maior que 15 dias
-                # Exibir as atividades com duração superior a 15 dias
-        st.write("Atividades no caminho crítico com mais de 15 dias de duração:")
-        st.table(atividades_maior_15_dias)
+        atividades_maior_15_dias, caminho_critico = calcular_caminho_critico_maior_que_15_dias(df)
+        st.write(atividades_maior_15_dias)
 
         if end_date <= start_date:
             st.error("A data final do cronograma deve ser posterior à data inicial.")
