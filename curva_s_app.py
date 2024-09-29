@@ -7,6 +7,8 @@ import io
 from openpyxl import Workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.chart import LineChart, Reference
+from fpdf import FPDF
+import datetime
 
 # Função para limpar a abreviação dos dias da semana
 def clean_weekday_abbreviation(date_str):
@@ -28,6 +30,17 @@ def read_excel(file):
     df['Duracao'] = df['Duração'].str.extract('(\d+)').astype(float)
     
     return df
+
+# Função para gerar alerta de atraso
+def gerar_alerta_atraso(df):
+    data_atual = pd.Timestamp.today().normalize()  # Data de hoje
+    atividades_atrasadas = df[df['Término'] < data_atual]
+
+    if not atividades_atrasadas.empty:
+        st.warning("Atividades Atrasadas:")
+        st.table(atividades_atrasadas[['Nome da tarefa', 'Início', 'Término', 'Duracao']])
+    else:
+        st.success("Nenhuma atividade atrasada.")
 
 # Função para remover prefixos indesejados das predecessoras
 def remove_prefix(predecessor):
@@ -130,6 +143,42 @@ def export_to_excel(df, caminho_critico, curva_s, delta, timeline):
     
     return output
 
+# Função para gerar o relatório em PDF
+def gerar_relatorio_pdf(df, caminho_critico, atividades_sem_predecessora, atividades_atrasadas):
+    pdf = FPDF()
+
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+
+    pdf.cell(200, 10, txt="Relatório Detalhado do Projeto", ln=True, align="C")
+
+    # Adicionar Curva S
+    pdf.cell(200, 10, txt="Curva S", ln=True)
+    pdf.image("curva_s.png", x=10, y=30, w=190)  # Supondo que tenha gerado um gráfico em PNG
+
+    # Adicionar caminho crítico
+    pdf.cell(200, 10, txt="Caminho Crítico", ln=True)
+    for atividade in caminho_critico:
+        pdf.cell(200, 10, txt=atividade, ln=True)
+
+    # Adicionar atividades sem predecessoras
+    pdf.cell(200, 10, txt="Atividades Sem Predecessoras", ln=True)
+    for _, row in atividades_sem_predecessora.iterrows():
+        pdf.cell(200, 10, txt=row['Nome da tarefa'], ln=True)
+
+    # Adicionar atividades atrasadas
+    if not atividades_atrasadas.empty:
+        pdf.cell(200, 10, txt="Atividades Atrasadas", ln=True)
+        for _, row in atividades_atrasadas.iterrows():
+            pdf.cell(200, 10, txt=row['Nome da tarefa'], ln=True)
+
+    # Salvar o relatório em PDF
+    pdf_output = io.BytesIO()
+    pdf.output(pdf_output, 'F')
+    pdf_output.seek(0)
+    
+    return pdf_output
+
 # Função para calcular o número da semana a partir de uma data inicial
 def calcular_numero_semana(timeline, start_date):
     return [(date - start_date).days // 7 + 1 for date in timeline]
@@ -169,7 +218,7 @@ def calcular_caminho_critico_maior_que_15_dias(df):
     return atividades_mais_15_dias[['Nome da tarefa', 'Duracao', 'Início', 'Término']], atividades_sem_predecessora, caminho_critico
 
 # Interface Streamlit
-st.title('Gerador de Curva S e Caminho Crítico')
+st.title('Gerador de Curva S e Caminho Crítico com Alerta de Atraso e Relatório PDF')
 
 uploaded_file = st.file_uploader("Escolha o arquivo Excel do cronograma", type="xlsx")
 
@@ -206,6 +255,9 @@ if uploaded_file is not None and start_date and end_date:
                 st.write("Atividades no caminho crítico com mais de 15 dias de duração:")
                 st.table(atividades_maior_15_dias)
 
+        # Gerar alerta de atividades atrasadas
+        gerar_alerta_atraso(df)
+
         if end_date <= start_date:
             st.error("A data final do cronograma deve ser posterior à data inicial.")
         else:
@@ -223,6 +275,17 @@ if uploaded_file is not None and start_date and end_date:
                 data=excel_data.getvalue(),
                 file_name="cronograma_com_curva_s.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+
+            # Gerar relatório em PDF
+            atividades_atrasadas = df[df['Término'] < pd.Timestamp.today().normalize()]
+            pdf_data = gerar_relatorio_pdf(df, caminho_critico, atividades_sem_predecessora, atividades_atrasadas)
+            
+            st.download_button(
+                label="Baixar Relatório em PDF",
+                data=pdf_data.getvalue(),
+                file_name="relatorio_projeto.pdf",
+                mime="application/pdf"
             )
 
     except ValueError:
