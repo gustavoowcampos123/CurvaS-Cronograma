@@ -155,6 +155,19 @@ def plot_s_curve(timeline, curva_s, start_date):
     plt.legend()
     st.pyplot(fig)
 
+# Função para calcular o caminho crítico e listar as atividades com duração maior que 15 dias
+def calcular_caminho_critico_maior_que_15_dias(df):
+    caminho_critico, atividades_sem_predecessora = calculate_critical_path(df)
+
+    if not caminho_critico:
+        return pd.DataFrame(), atividades_sem_predecessora, caminho_critico
+
+    # Filtrar atividades no caminho crítico com duração superior a 15 dias
+    atividades_caminho_critico = df[df['Nome da tarefa'].isin(caminho_critico)]
+    atividades_mais_15_dias = atividades_caminho_critico[atividades_caminho_critico['Duracao'] > 15]
+
+    return atividades_mais_15_dias[['Nome da tarefa', 'Duracao', 'Início', 'Término']], atividades_sem_predecessora, caminho_critico
+
 # Interface Streamlit
 st.title('Gerador de Curva S e Caminho Crítico')
 
