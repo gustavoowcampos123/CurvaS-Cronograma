@@ -143,7 +143,8 @@ def calcular_caminho_critico_maior_que_15_dias(df):
 
     return atividades_mais_15_dias[['Nome da tarefa', 'Duracao', 'Início', 'Término']], atividades_sem_predecessora, caminho_critico
 
-# Função para plotar a Curva S
+
+# Função para plotar a Curva S com escala semanal
 def plot_s_curve(timeline, curva_s):
     fig, ax = plt.subplots()
     ax.plot(timeline, curva_s, marker='o', label="Curva S (0 a 100%)")
@@ -154,10 +155,16 @@ def plot_s_curve(timeline, curva_s):
     ax.set_ylabel('Progresso Acumulado (%)')
     ax.set_ylim(0, 100)
     ax.grid(True)
-    plt.xticks(rotation=45)
+
+    # Definir as marcações no eixo X para serem semanais
+    ax.set_xticks(timeline)
+    plt.xticks(rotation=45)  # Girar os rótulos das datas para melhor legibilidade
+
     plt.legend()
-    
     st.pyplot(fig)
+
+# Interface Streamlit (continuação)
+
 
 # Interface Streamlit
 st.title('Gerador de Curva S e Caminho Crítico')
