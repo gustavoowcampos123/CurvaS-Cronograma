@@ -182,7 +182,7 @@ if uploaded_file is not None and start_date and end_date:
         df = read_excel(uploaded_file)
     
                st.write("Dados do cronograma:")
-        st.dataframe(df)
+                st.dataframe(df)
     
         caminho_critico = calculate_critical_path(df)
         st.write("Caminho Crítico:")
