@@ -8,7 +8,8 @@ from openpyxl.chart import LineChart, Reference
 from fpdf import FPDF
 from PIL import Image
 import datetime
-import tempfile  # Para gerar arquivos temporários
+import tempfile
+import os
 
 # Função para limpar a abreviação dos dias da semana
 def clean_weekday_abbreviation(date_str):
@@ -146,8 +147,9 @@ def gerar_relatorio_pdf(df, atividades_sem_predecessora, atividades_atrasadas, c
     pdf.output(output, 'S').encode('latin1')  # Corrigido para salvar no buffer de memória
     output.seek(0)
     
-    # Remover o arquivo temporário
-    os.remove(img_filename)
+    # Verificar se o arquivo temporário existe antes de tentar removê-lo
+    if os.path.exists(img_filename):
+        os.remove(img_filename)
 
     return output
 
@@ -189,12 +191,12 @@ if st.button("Gerar Relatório"):
 
             # Atividades para Próxima Semana
             st.write("### Atividades para Próxima Semana")
-            st.dataframe(atividades_proxima_semana)
+                        st.dataframe(atividades_proxima_semana)
 
             proximos_15_dias = pd.Timestamp.today() + pd.Timedelta(days=15)
             atividades_proximos_15_dias = df_raw[(df_raw['Início'] <= proximos_15_dias) & (df_raw['Término'] >= pd.Timestamp.today())]
-            
-            # Atividades para os Próximos 15 dias
+
+            # Atividades para os Próximos 15 Dias
             st.write("### Atividades para os Próximos 15 Dias")
             st.dataframe(atividades_proximos_15_dias)
 
@@ -209,8 +211,17 @@ if st.button("Gerar Relatório"):
                 mime="application/pdf"
             )
 
+            # Exportar o Excel com a Curva S
+            excel_data = export_to_excel(df_raw, progress_by_week)
+
+            # Botão para baixar o arquivo Excel
+            st.download_button(
+                label="Baixar Cronograma com Curva S",
+                data=excel_data.getvalue(),
+                file_name="cronograma_com_curva_s.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+
         except ValueError as e:
             st.error(f"Erro ao processar os dados: {e}")
 
-
-        
