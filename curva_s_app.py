@@ -185,7 +185,7 @@ if st.button("Gerar Relatório"):
             st.dataframe(atividades_atrasadas)
 
             proximos_7_dias = pd.Timestamp.today() + pd.Timedelta(days=7)
-            atividades_proxima_semana = df_raw[(df_raw['Início'] <= proximos_7_dia) & (df_raw['Término'] >= pd.Timestamp.today())]
+            atividades_proxima_semana = df_raw[(df_raw['Início'] <= proximos_7_dias) & (df_raw['Término'] >= pd.Timestamp.today())]
 
             # Atividades para Próxima Semana
             st.write("### Atividades para Próxima Semana")
