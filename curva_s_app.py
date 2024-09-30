@@ -10,66 +10,6 @@ from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.chart import LineChart, Reference
 from fpdf import FPDF
 
-# Função para limpar a abreviação dos dias da semana
-def clean_weekday_abbreviation(date_str):
-    return date_str.split(' ', 1)[1] if isinstance(date_str, str) else date_str
-
-# Função para remover prefixos indesejados das predecessoras
-def remove_prefix(predecessor):
-    prefixes = ['TT', 'TI', 'II']
-    for prefix in prefixes:
-        if predecessor.startswith(prefix):
-            return predecessor[len(prefix):].strip()
-    return predecessor.strip()
-
-# Função para ler o arquivo Excel e tratar as colunas de data
-def read_excel(file):
-    df = pd.read_excel(file)
-    
-    # Limpar as colunas de datas
-    df['Início'] = df['Início'].apply(clean_weekday_abbreviation)
-    df['Término'] = df['Término'].apply(clean_weekday_abbreviation)
-    
-    # Converter para datetime
-    df['Início'] = pd.to_datetime(df['Início'], format='%d/%m/%y', errors='coerce')
-    df['Término'] = pd.to_datetime(df['Término'], format='%d/%m/%y', errors='coerce')
-    
-    # Tratar a duração (remover "dias" e converter para float)
-    df['Duracao'] = df['Duração'].str.extract('(\d+)').astype(float)
-    
-    return df
-
-# Função para gerar a Curva S e salvar como PNG
-def plot_s_curve(timeline, curva_s, start_date):
-    semanas = calcular_numero_semana(timeline, start_date)
-    
-    fig, ax = plt.subplots()
-    ax.plot(semanas, curva_s, marker='o', label="Curva S (0 a 100%)")
-    ax.axvline(x=semanas[0], color='green', linestyle='--', label="Início do Cronograma")
-    
-    ax.set_title('Curva S - Progresso Acumulado (0 a 100%)')
-    ax.set_xlabel('Número da Semana')
-    ax.set_ylabel('Progresso Acumulado (%)')
-    ax.set_ylim(0, 100)
-    ax.grid(True)
-
-    ax.set_xticks(semanas)
-    plt.xticks(rotation=45)
-
-    plt.legend()
-    st.pyplot(fig)
-
-    # Salvar o gráfico como PNG temporário
-    curva_s_path = "curva_s.png"
-    fig.savefig(curva_s_path)
-    plt.close(fig)
-
-    return curva_s_path
-
-# Função para calcular o número da semana a partir de uma data inicial
-def calcular_numero_semana(timeline, start_date):
-    return [(date - start_date).days // 7 + 1 for date in timeline]
-
 # Função para gerar o relatório em PDF
 def gerar_relatorio_pdf(df, caminho_critico, atividades_sem_predecessora, atividades_atrasadas, curva_s_path):
     pdf = FPDF()
@@ -123,6 +63,37 @@ def gerar_relatorio_pdf(df, caminho_critico, atividades_sem_predecessora, ativid
         os.remove(curva_s_path)
     
     return pdf_output
+
+# Função para gerar a Curva S e salvar como PNG
+def plot_s_curve(timeline, curva_s, start_date):
+    semanas = calcular_numero_semana(timeline, start_date)
+    
+    fig, ax = plt.subplots()
+    ax.plot(semanas, curva_s, marker='o', label="Curva S (0 a 100%)")
+    ax.axvline(x=semanas[0], color='green', linestyle='--', label="Início do Cronograma")
+    
+    ax.set_title('Curva S - Progresso Acumulado (0 a 100%)')
+    ax.set_xlabel('Número da Semana')
+    ax.set_ylabel('Progresso Acumulado (%)')
+    ax.set_ylim(0, 100)
+    ax.grid(True)
+
+    ax.set_xticks(semanas)
+    plt.xticks(rotation=45)
+
+    plt.legend()
+    st.pyplot(fig)
+
+    # Salvar o gráfico como PNG temporário
+    curva_s_path = "curva_s.png"
+    fig.savefig(curva_s_path)
+    plt.close(fig)
+
+    return curva_s_path
+
+# Função para calcular o número da semana a partir de uma data inicial
+def calcular_numero_semana(timeline, start_date):
+    return [(date - start_date).days // 7 + 1 for date in timeline]
 
 # Função para exportar os dados para Excel com gráfico
 def export_to_excel(df, caminho_critico, curva_s, delta, timeline):
@@ -187,6 +158,7 @@ def generate_s_curve(df, start_date, end_date):
     delta = np.diff(progresso_acumulado_percentual, prepend=0)
     
     return timeline, progresso_acumulado_percentual, delta
+
 # Função para calcular o caminho crítico e listar as atividades com duração maior que 15 dias
 def calcular_caminho_critico_maior_que_15_dias(df):
     caminho_critico, atividades_sem_predecessora = calculate_critical_path(df)
@@ -221,7 +193,7 @@ def calculate_critical_path(df):
                 # Adiciona as atividades sem predecessora à lista
                 atividades_sem_predecessora.append(row)
     else:
-        st.error("A coluna 'Predecessoras' não foi encontrada no arquivo.")
+                st.error("A coluna 'Predecessoras' não foi encontrada no arquivo.")
     
     if len(G.nodes) == 0:
         st.error("O grafo de atividades está vazio. Verifique as predecessoras e a duração das atividades.")
@@ -342,3 +314,4 @@ if st.button("Gerar Relatórios"):
 
         except ValueError as e:
             st.error(f"Erro ao processar os dados: {e}")
+
