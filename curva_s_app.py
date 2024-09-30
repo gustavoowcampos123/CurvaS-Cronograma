@@ -146,8 +146,9 @@ def gerar_relatorio_pdf(df, atividades_sem_predecessora, atividades_atrasadas, c
     pdf.output(output, 'S').encode('latin1')  # Corrigido para salvar no buffer de memória
     output.seek(0)
     
-    # Remover o arquivo temporário
-    os.remove(img_filename)
+    # Verificar se o arquivo temporário ainda existe antes de removê-lo
+    if os.path.exists(img_filename):
+        os.remove(img_filename)
 
     return output
 
