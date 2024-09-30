@@ -197,8 +197,6 @@ def calcular_caminho_critico_maior_que_15_dias(df):
         return pd.DataFrame(), atividades_sem_predecessora, caminho_critico
 
     # Filtrar atividades no caminho crítico com duração superior aAqui está o código finalizado com todas as funcionalidades. Certifiquei-me de que o problema de conversão para DataFrame está resolvido e o restante do código está completo:
-
-```python
     # Filtrar atividades no caminho crítico com duração superior a 15 dias
     atividades_caminho_critico = df[df['Nome da tarefa'].isin(caminho_critico)]
     atividades_mais_15_dias = atividades_caminho_critico[atividades_caminho_critico['Duracao'] > 15]
