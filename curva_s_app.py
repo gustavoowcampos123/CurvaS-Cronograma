@@ -174,7 +174,7 @@ def gerar_relatorio_pdf(df, caminho_critico, atividades_sem_predecessora, ativid
     return pdf_output
 
 # Interface Streamlit
-st.title('Gerador de Curva S e Relatório')
+st.title('AWPlan - A ferramenta de Gestão de Cronograma')
 
 uploaded_file = st.file_uploader("Escolha o arquivo Excel do cronograma", type="xlsx")
 
