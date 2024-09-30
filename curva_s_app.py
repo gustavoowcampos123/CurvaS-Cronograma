@@ -109,7 +109,7 @@ def export_to_excel(df, curva_s_df):
     return output
 
 # Função para gerar o relatório em PDF
-def gerar_relatorio_pdf(df, caminho_critico, atividades_sem_predecessora, atividades_atrasadas, curva_s_path):
+def gerar_relatorio_pdf(df, caminho_critico, atividades_sem_predecessora, atividades_atrasadas, curva_s_img):
     pdf = FPDF()
 
     pdf.add_page()
@@ -121,7 +121,7 @@ def gerar_relatorio_pdf(df, caminho_critico, atividades_sem_predecessora, ativid
 
     # Adicionar Curva S
     pdf.cell(200, 10, txt="Curva S", ln=True)
-    pdf.image(curva_s_path, x=10, y=40, w=190)  # Ajustar a posição e tamanho da imagem
+    pdf.image(curva_s_img, x=10, y=40, w=190)  # Ajustar a posição e tamanho da imagem
     pdf.ln(70)  # Adicionar espaçamento abaixo da imagem
 
     # Adicionar caminho crítico
@@ -149,14 +149,11 @@ def gerar_relatorio_pdf(df, caminho_critico, atividades_sem_predecessora, ativid
 
     # Salvar o relatório em PDF no objeto BytesIO
     pdf_output = io.BytesIO()
-    pdf.output(pdf_output)  # Salva diretamente no fluxo de bytes
+    pdf.output(pdf_output, 'S')  # Use 'S' para salvar diretamente no fluxo de bytes
     pdf_output.seek(0)
 
-    # Remover o arquivo temporário de gráfico
-    if os.path.exists(curva_s_path):
-        os.remove(curva_s_path)
-    
     return pdf_output
+
 
 # Interface Streamlit
 st.title('Gerador de Curva S e Relatório')
