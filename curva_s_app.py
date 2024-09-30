@@ -152,7 +152,6 @@ def gerar_relatorio_pdf(df, caminho_critico, atividades_sem_predecessora, ativid
     
     return pdf_output
 
-
 # Função para calcular o número da semana a partir de uma data inicial
 def calcular_numero_semana(timeline, start_date):
     return [(date - start_date).days // 7 + 1 for date in timeline]
@@ -197,9 +196,8 @@ def calcular_caminho_critico_maior_que_15_dias(df):
     if not caminho_critico:
         return pd.DataFrame(), atividades_sem_predecessora, caminho_critico
 
-    # Filtrar atividades no caminho crítico com duração superior aAqui está o código finalizado com todas as funcionalidades. Certifiquei-me de que o problema de conversão para DataFrame está resolvido e o restante do código está completo:
     # Filtrar atividades no caminho crítico com duração superior a 15 dias
-    atividades_caminho_critico = df[df['Nome da tarefa'].isin(caminho_critico)]
+        atividades_caminho_critico = df[df['Nome da tarefa'].isin(caminho_critico)]
     atividades_mais_15_dias = atividades_caminho_critico[atividades_caminho_critico['Duracao'] > 15]
 
     return atividades_mais_15_dias[['Nome da tarefa', 'Duracao', 'Início', 'Término']], atividades_sem_predecessora, caminho_critico
@@ -348,3 +346,4 @@ if st.button("Gerar Relatórios"):
 
         except ValueError as e:
             st.error(f"Erro ao processar os dados: {e}")
+
