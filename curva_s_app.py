@@ -6,7 +6,9 @@ from openpyxl import Workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.chart import LineChart, Reference
 from fpdf import FPDF
+from PIL import Image
 import datetime
+import tempfile  # Para gerar arquivos temporários
 
 # Função para limpar a abreviação dos dias da semana
 def clean_weekday_abbreviation(date_str):
@@ -60,17 +62,25 @@ def gerar_curva_s(df_raw, start_date_str='16/09/2024'):
     if max_progress > 0:
         progress_by_week['% Executado Acumulado'] = (progress_by_week['% Executado Acumulado'] / max_progress) * 100
 
-    plt.figure(figsize=(10, 6))
-    plt.plot(progress_by_week['Data'], progress_by_week['% Executado Acumulado'], marker='o', linestyle='-', color='b')
-    plt.title('Curva S - % Executado por Semana')
-    plt.xlabel('Data')
-    plt.ylabel('% Executado Acumulado')
-    plt.grid(True)
+    # Plotar a Curva S e retornar o gráfico como imagem
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.plot(progress_by_week['Data'], progress_by_week['% Executado Acumulado'], marker='o', linestyle='-', color='b')
+    ax.set_title('Curva S - % Executado por Semana')
+    ax.set_xlabel('Data')
+    ax.set_ylabel('% Executado Acumulado')
+    ax.grid(True)
     plt.xticks(rotation=45)
     plt.tight_layout()
-    st.pyplot(plt)
 
-    return progress_by_week
+    # Converter o gráfico em imagem no formato PNG
+    img_buffer = io.BytesIO()
+    fig.savefig(img_buffer, format='png')
+    img_buffer.seek(0)
+    plt.close(fig)
+
+    st.pyplot(fig)
+
+    return progress_by_week, img_buffer
 
 # Função para exportar os dados para Excel com gráfico
 def export_to_excel(df, curva_s_df):
@@ -99,15 +109,23 @@ def export_to_excel(df, curva_s_df):
     return output
 
 # Função para gerar o relatório em PDF
-def gerar_relatorio_pdf(df, atividades_sem_predecessora, atividades_atrasadas, caminho_critico, progress_by_week):
+def gerar_relatorio_pdf(df, atividades_sem_predecessora, atividades_atrasadas, caminho_critico, curva_s_img):
     pdf = FPDF()
 
     pdf.add_page()
     pdf.set_font("Arial", size=12)
     pdf.cell(200, 10, txt="Relatório do Projeto", ln=True, align="C")
 
+    # Salvar temporariamente a imagem da Curva S
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as temp_image:
+        img_filename = temp_image.name
+        curva_s_img.seek(0)
+        with open(img_filename, 'wb') as f:
+            f.write(curva_s_img.read())
+
+    # Adicionar a imagem da Curva S no PDF
     pdf.cell(200, 10, txt="Curva S", ln=True)
-    pdf.image("curva_s.png", x=10, y=30, w=190)
+    pdf.image(img_filename, x=10, y=30, w=190)
 
     pdf.ln(180)
     pdf.cell(200, 10, txt="Caminho Crítico", ln=True)
@@ -128,6 +146,9 @@ def gerar_relatorio_pdf(df, atividades_sem_predecessora, atividades_atrasadas, c
     pdf.output(output)
     output.seek(0)
     
+    # Remover o arquivo temporário
+    os.remove(img_filename)
+
     return output
 
 # Interface Streamlit
@@ -143,8 +164,8 @@ if st.button("Gerar Relatório"):
             # Carregar o Excel
             df_raw = read_excel(uploaded_file)
 
-            # Gerar Curva S
-            progress_by_week = gerar_curva_s(df_raw, start_date_str=start_date)
+            # Gerar Curva S e obter o gráfico como imagem
+            progress_by_week, curva_s_img = gerar_curva_s(df_raw, start_date_str=start_date)
 
             # Abas para visualização
             st.write("### Dados do Cronograma")
@@ -165,17 +186,21 @@ if st.button("Gerar Relatório"):
 
             proximos_7_dias = pd.Timestamp.today() + pd.Timedelta(days=7)
             atividades_proxima_semana = df_raw[(df_raw['Início'] <= proximos_7_dias) & (df_raw['Término'] >= pd.Timestamp.today())]
+            # Atividades para Próxima Semana
             st.write("### Atividades para Próxima Semana")
             st.dataframe(atividades_proxima_semana)
 
             proximos_15_dias = pd.Timestamp.today() + pd.Timedelta(days=15)
             atividades_proximos_15_dias = df_raw[(df_raw['Início'] <= proximos_15_dias) & (df_raw['Término'] >= pd.Timestamp.today())]
+            
+            # Atividades para os Próximos 15 dias
             st.write("### Atividades para os Próximos 15 Dias")
             st.dataframe(atividades_proximos_15_dias)
 
-            # Gerar Relatório em PDF
-            pdf_data = gerar_relatorio_pdf(df_raw, atividades_sem_predecessora, atividades_atrasadas, caminho_critico, progress_by_week)
-            
+            # Gerar Relatório em PDF com a imagem da Curva S
+            pdf_data = gerar_relatorio_pdf(df_raw, atividades_sem_predecessora, atividades_atrasadas, caminho_critico, curva_s_img)
+
+            # Botão para baixar o relatório em PDF
             st.download_button(
                 label="Baixar Relatório em PDF",
                 data=pdf_data.getvalue(),
@@ -185,3 +210,4 @@ if st.button("Gerar Relatório"):
 
         except ValueError as e:
             st.error(f"Erro ao processar os dados: {e}")
+
