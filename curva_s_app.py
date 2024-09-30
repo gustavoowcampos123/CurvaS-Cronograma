@@ -196,11 +196,20 @@ def calcular_caminho_critico_maior_que_15_dias(df):
     if not caminho_critico:
         return pd.DataFrame(), atividades_sem_predecessora, caminho_critico
 
-    # Filtrar atividades no caminho crítico com duração superior a 15 dias
+    # Verifica se a coluna "Nome da tarefa" existe no DataFrame
+    if 'Nome da tarefa' in df.columns:
         atividades_caminho_critico = df[df['Nome da tarefa'].isin(caminho_critico)]
-    atividades_mais_15_dias = atividades_caminho_critico[atividades_caminho_critico['Duracao'] > 15]
+    else:
+        atividades_caminho_critico = pd.DataFrame()  # Garante que a variável exista mesmo se a coluna não estiver presente
+    
+    # Verifica se a coluna "Duracao" existe antes de aplicar o filtro
+    if not atividades_caminho_critico.empty and 'Duracao' in atividades_caminho_critico.columns:
+        atividades_mais_15_dias = atividades_caminho_critico[atividades_caminho_critico['Duracao'] > 15]
+    else:
+        atividades_mais_15_dias = pd.DataFrame()  # Se não houver duração ou caminho crítico, retorna DataFrame vazio
 
     return atividades_mais_15_dias[['Nome da tarefa', 'Duracao', 'Início', 'Término']], atividades_sem_predecessora, caminho_critico
+
 
 # Função para calcular o caminho crítico
 def calculate_critical_path(df):
