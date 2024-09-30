@@ -190,26 +190,26 @@ if st.button("Gerar Relatório"):
             progress_by_week, curva_s_img_path = gerar_curva_s(df_raw, start_date_str=start_date)
 
             # Abas para visualização com botões expansíveis
-            with st.expander("Dados do Cronograma"):
+            with st.expander(" ▶️ Dados do Cronograma"):
                 st.dataframe(df_raw)
 
             atividades_sem_predecessora = df_raw[df_raw['Predecessoras'].isna()]
 
-            with st.expander("Atividades sem Predecessoras"):
+            with st.expander(" ▶️ Atividades sem Predecessoras"):
                 st.dataframe(atividades_sem_predecessora)
 
             caminho_critico = df_raw[df_raw['Duracao'] > 15]  # Exemplo de caminho crítico simplificado
-            with st.expander("Caminho Crítico"):
+            with st.expander(" ▶️ Caminho Crítico"):
                 st.dataframe(caminho_critico)
 
             atividades_atrasadas = df_raw[df_raw['Término'] < pd.Timestamp.today()]
-            with st.expander("Atividades Atrasadas"):
+            with st.expander(" ▶️ Atividades Atrasadas"):
                 st.dataframe(atividades_atrasadas)
 
             proximos_7_dias = pd.Timestamp.today() + pd.Timedelta(days=7)
             atividades_proxima_semana = df_raw[(df_raw['Início'] <= proximos_7_dias) & (df_raw['Término'] >= pd.Timestamp.today())]
 
-            with st.expander("Atividades para Próxima Semana"):
+            with st.expander(" ▶️ Atividades para Próxima Semana"):
                 st.dataframe(atividades_proxima_semana)
 
             proximos_15_dias = pd.Timestamp.today() + pd.Timedelta(days=15)
