@@ -1,5 +1,5 @@
-import pandas as pd
 import os
+import pandas as pd
 import matplotlib.pyplot as plt
 import streamlit as st
 import io
@@ -8,36 +8,54 @@ from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.chart import LineChart, Reference
 from fpdf import FPDF
 from PIL import Image
-import datetime
-import tempfile  # Para gerar arquivos temporários
+import tempfile
 
-# Função para limpar a abreviação dos dias da semana
-def clean_weekday_abbreviation(date_str):
-    return date_str.split(' ', 1)[1] if isinstance(date_str, str) else date_str
+# Função para gerar o relatório em PDF
+def gerar_relatorio_pdf(df, atividades_sem_predecessora, atividades_atrasadas, caminho_critico, curva_s_img):
+    pdf = FPDF()
 
-# Função para ler o arquivo Excel e tratar as colunas de data
-def read_excel(file):
-    df = pd.read_excel(file)
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+    pdf.cell(200, 10, txt="Relatório do Projeto", ln=True, align="C")
+
+    # Salvar temporariamente a imagem da Curva S
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as temp_image:
+        img_filename = temp_image.name
+        curva_s_img.seek(0)
+        with open(img_filename, 'wb') as f:
+            f.write(curva_s_img.read())
+
+    # Adicionar a imagem da Curva S no PDF
+    pdf.cell(200, 10, txt="Curva S", ln=True)
+    pdf.image(img_filename, x=10, y=30, w=190)
+
+    pdf.ln(180)
+    pdf.cell(200, 10, txt="Caminho Crítico", ln=True)
+    for atividade in caminho_critico['Nome da tarefa']:
+        pdf.cell(200, 10, txt=atividade, ln=True)
+
+    pdf.ln(10)
+    pdf.cell(200, 10, txt="Atividades Sem Predecessoras", ln=True)
+    for _, row in atividades_sem_predecessora.iterrows():
+        pdf.cell(200, 10, txt=row['Nome da tarefa'], ln=True)
+
+    pdf.ln(10)
+    pdf.cell(200, 10, txt="Atividades Atrasadas", ln=True)
+    for _, row in atividades_atrasadas.iterrows():
+        pdf.cell(200, 10, txt=row['Nome da tarefa'], ln=True)
+
+    output = io.BytesIO()
+    pdf.output(output)  # Salvar no buffer de memória
+    output.seek(0)
     
-    # Limpar as colunas de datas
-    df['Início'] = df['Início'].apply(lambda x: clean_weekday_abbreviation(x) if isinstance(x, str) else x)
-    df['Término'] = df['Término'].apply(lambda x: clean_weekday_abbreviation(x) if isinstance(x, str) else x)
-    
-    # Converter para datetime
-    df['Início'] = pd.to_datetime(df['Início'], format='%d/%m/%y', errors='coerce')
-    df['Término'] = pd.to_datetime(df['Término'], format='%d/%m/%y', errors='coerce')
-    
-    # Tratar a duração (remover "dias" e converter para float)
-    if 'Duração' in df.columns:
-        df['Duracao'] = df['Duração'].str.extract('(\d+)').astype(float)
-    
-    return df
+    # Verificar se o arquivo temporário ainda existe antes de removê-lo
+    if os.path.exists(img_filename):
+        os.remove(img_filename)
+
+    return output
 
 # Função para gerar a Curva S
 def gerar_curva_s(df_raw, start_date_str='16/09/2024'):
-    df_raw['Início'] = df_raw['Início'].apply(lambda x: clean_weekday_abbreviation(x) if isinstance(x, str) else x)
-    df_raw['Término'] = df_raw['Término'].apply(lambda x: clean_weekday_abbreviation(x) if isinstance(x, str) else x)
-    
     start_date = pd.to_datetime(start_date_str)
     end_date = df_raw['Término'].max()
     weeks = pd.date_range(start=start_date, end=end_date, freq='W-MON')
@@ -109,50 +127,6 @@ def export_to_excel(df, curva_s_df):
     
     return output
 
-# Função para gerar o relatório em PDF
-def gerar_relatorio_pdf(df, atividades_sem_predecessora, atividades_atrasadas, caminho_critico, curva_s_img):
-    pdf = FPDF()
-
-    pdf.add_page()
-    pdf.set_font("Arial", size=12)
-    pdf.cell(200, 10, txt="Relatório do Projeto", ln=True, align="C")
-
-    # Salvar temporariamente a imagem da Curva S
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as temp_image:
-        img_filename = temp_image.name
-        curva_s_img.seek(0)
-        with open(img_filename, 'wb') as f:
-            f.write(curva_s_img.read())
-
-    # Adicionar a imagem da Curva S no PDF
-    pdf.cell(200, 10, txt="Curva S", ln=True)
-    pdf.image(img_filename, x=10, y=30, w=190)
-
-    pdf.ln(180)
-    pdf.cell(200, 10, txt="Caminho Crítico", ln=True)
-    for atividade in caminho_critico:
-        pdf.cell(200, 10, txt=atividade, ln=True)
-
-    pdf.ln(10)
-    pdf.cell(200, 10, txt="Atividades Sem Predecessoras", ln=True)
-    for _, row in atividades_sem_predecessora.iterrows():
-        pdf.cell(200, 10, txt=row['Nome da tarefa'], ln=True)
-
-    pdf.ln(10)
-    pdf.cell(200, 10, txt="Atividades Atrasadas", ln=True)
-    for _, row in atividades_atrasadas.iterrows():
-        pdf.cell(200, 10, txt=row['Nome da tarefa'], ln=True)
-
-    output = io.BytesIO()
-    pdf.output(output, 'S').encode('latin1')  # Corrigido para salvar no buffer de memória
-    output.seek(0)
-    
-    # Verificar se o arquivo temporário ainda existe antes de removê-lo
-    if os.path.exists(img_filename):
-        os.remove(img_filename)
-
-    return output
-
 # Interface Streamlit
 st.title('Gerador de Curva S e Relatório')
 
@@ -164,50 +138,91 @@ if st.button("Gerar Relatório"):
     if uploaded_file is not None and start_date:
         try:
             # Carregar o Excel
-            df_raw = read_excel(uploaded_file)
+            df_raw = pd.read_excel(uploaded_file)
 
-            # Gerar Curva S e obter o gráfico como imagem
+            # Geração da Curva S como imagem
             progress_by_week, curva_s_img = gerar_curva_s(df_raw, start_date_str=start_date)
 
-            # Abas para visualização
-            st.write("### Dados do Cronograma")
-            st.dataframe(df_raw)
-
+            # Exemplo de outras tabelas
             atividades_sem_predecessora = df_raw[df_raw['Predecessoras'].isna()]
-
-            st.write("### Atividades sem Predecessoras")
-            st.dataframe(atividades_sem_predecessora)
-
-            caminho_critico = df_raw[df_raw['Duracao'] > 15]  # Exemplo de caminho crítico simplificado
-            st.write("### Caminho Crítico")
-            st.dataframe(caminho_critico)
-
+            caminho_critico = df_raw[df_raw['Duracao'] > 15]  # Exemplo simplificado de caminho crítico
             atividades_atrasadas = df_raw[df_raw['Término'] < pd.Timestamp.today()]
-            st.write("### Atividades Atrasadas")
-            st.dataframe(atividades_atrasadas)
 
-            # Certificar-se de que 'atividades_proxima_semana' e 'atividades_proximos_15_dias' estão definidas corretamente
+            # Exibição nas abas
+            tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["Dados do Cronograma", 
+                                                          "Atividades sem Predecessora", 
+                                                          "Caminho Crítico", 
+                                                          "Atividades Atrasadas", 
+                                                          "Atividades para Próxima Semana", 
+                                                          "Atividades para os Próximos 15 Dias"])
+            
+            with tab1:
+                st.write("### Dados do Cronograma")
+                st.dataframe(df_raw)
+
+            with tab2:
+                st.write("### Atividades sem Predecessora")
+                if not atividades_sem_predecessora.empty:
+                    st.dataframe(atividades_sem_predecessora)
+                else:
+                    st.write("Nenhuma atividade sem predecessora encontrada.")
+
+            with tab3:
+                st.write("### Caminho Crítico")
+                if not caminho_critico.empty:
+                    st.dataframe(caminho_critico)
+                else:
+                    st.write("Nenhuma atividade com mais de 15 dias de duração no caminho crítico.")
+
+            with tab4:
+                st.write("### Atividades Atrasadas")
+                if not atividades_atrasadas.empty:
+                    st.dataframe(atividades_atrasadas)
+                else:
+                    st.write("Nenhuma atividade atrasada.")
+
             proximos_7_dias = pd.Timestamp.today() + pd.Timedelta(days=7)
             atividades_proxima_semana = df_raw[(df_raw['Início'] <= proximos_7_dias) & (df_raw['Término'] >= pd.Timestamp.today())]
-            
-            # Atividades para Próxima Semana
-            st.write("### Atividades para Próxima Semana")
-            if not atividades_proxima_semana.empty:
-                st.dataframe(atividades_proxima_semana)
-            else:
-                st.write("Nenhuma atividade prevista para a próxima semana.")
+
+            with tab5:
+                st.write("### Atividades para Próxima Semana")
+                if not atividades_proxima_semana.empty:
+                    st.dataframe(atividades_proxima_semana)
+                else:
+                    st.write("Nenhuma atividade para a próxima semana.")
 
             proximos_15_dias = pd.Timestamp.today() + pd.Timedelta(days=15)
             atividades_proximos_15_dias = df_raw[(df_raw['Início'] <= proximos_15_dias) & (df_raw['Término'] >= pd.Timestamp.today())]
-            
-            # Atividades para os Próximos 15 dias
-            st.write("### Atividades para os Próximos 15 Dias")
-            if not atividades_proximos_15_dias.empty:
-                st.dataframe(atividades_proximos_15_dias)
-            else:
-                st.write("Nenhuma atividade prevista para os próximos 15 dias.")
 
-            # Gerar Relatório em PDF com a imagem da Curva S
+            with tab6:
+                st.write("### Atividades para os Próximos 15 Dias")
+                if not atividades_proximos_15_dias.empty:
+                    st.dataframe(atividades_proximos_15_dias)
+                else:
+                    st.write("Nenhuma atividade para os próximos 15 dias.")
+                                with tab6:
+                st.write("### Atividades para os Próximos 15 Dias")
+                if not atividades_proximos_15_dias.empty:
+                    st.dataframe(atividades_proximos_15_dias)
+                else:
+                    st.write("Nenhuma atividade para os próximos 15 dias.")
+
+            # Exportar os dados para Excel e fornecer o botão de download
+            curva_s_df = pd.DataFrame({
+                'Data': progress_by_week['Data'],
+                '% Executado Acumulado': progress_by_week['% Executado Acumulado']
+            })
+
+            excel_data = export_to_excel(df_raw, curva_s_df)
+
+            st.download_button(
+                label="Baixar Cronograma com Curva S",
+                data=excel_data.getvalue(),
+                file_name="cronograma_com_curva_s.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+
+            # Gerar relatório em PDF
             pdf_data = gerar_relatorio_pdf(df_raw, atividades_sem_predecessora, atividades_atrasadas, caminho_critico, curva_s_img)
 
             # Botão para baixar o relatório em PDF
@@ -218,5 +233,6 @@ if st.button("Gerar Relatório"):
                 mime="application/pdf"
             )
 
-        except ValueError as e:
+        except Exception as e:
             st.error(f"Erro ao processar os dados: {e}")
+
