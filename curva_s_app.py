@@ -268,14 +268,14 @@ if st.button("Gerar Relatórios"):
                 # Expander para "Atividades sem predecessoras"
                 with st.expander("Atividades sem Predecessoras"):
                     if atividades_sem_predecessora:
-                        st.write("Atividades sem predecessoras:")
+                        st.write("▶ Atividades sem predecessoras:")
                         atividades_sem_predecessora_df = pd.DataFrame(atividades_sem_predecessora)
                         st.table(atividades_sem_predecessora_df[['Nome da tarefa', 'Início', 'Término', 'Duracao']])
                     else:
                         st.write("Nenhuma atividade sem predecessoras encontrada.")
 
                 # Expander para "Caminho Crítico"
-                with st.expander("Caminho Crítico"):
+                with st.expander("▶ Caminho Crítico"):
                     if atividades_maior_15_dias.empty:
                         st.write("Nenhuma atividade com mais de 15 dias de duração no caminho crítico.")
                     else:
