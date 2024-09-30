@@ -184,17 +184,26 @@ if st.button("Gerar Relatório"):
             st.write("### Atividades Atrasadas")
             st.dataframe(atividades_atrasadas)
 
+            # Certificar-se de que 'atividades_proxima_semana' e 'atividades_proximos_15_dias' estão definidas corretamente
             proximos_7_dias = pd.Timestamp.today() + pd.Timedelta(days=7)
-                        # Atividades para Próxima Semana
+            atividades_proxima_semana = df_raw[(df_raw['Início'] <= proximos_7_dias) & (df_raw['Término'] >= pd.Timestamp.today())]
+            
+            # Atividades para Próxima Semana
             st.write("### Atividades para Próxima Semana")
-            st.dataframe(atividades_proxima_semana)
+            if not atividades_proxima_semana.empty:
+                st.dataframe(atividades_proxima_semana)
+            else:
+                st.write("Nenhuma atividade prevista para a próxima semana.")
 
             proximos_15_dias = pd.Timestamp.today() + pd.Timedelta(days=15)
             atividades_proximos_15_dias = df_raw[(df_raw['Início'] <= proximos_15_dias) & (df_raw['Término'] >= pd.Timestamp.today())]
             
             # Atividades para os Próximos 15 dias
             st.write("### Atividades para os Próximos 15 Dias")
-            st.dataframe(atividades_proximos_15_dias)
+            if not atividades_proximos_15_dias.empty:
+                st.dataframe(atividades_proximos_15_dias)
+            else:
+                st.write("Nenhuma atividade prevista para os próximos 15 dias.")
 
             # Gerar Relatório em PDF com a imagem da Curva S
             pdf_data = gerar_relatorio_pdf(df_raw, atividades_sem_predecessora, atividades_atrasadas, caminho_critico, curva_s_img)
@@ -209,4 +218,3 @@ if st.button("Gerar Relatório"):
 
         except ValueError as e:
             st.error(f"Erro ao processar os dados: {e}")
-
