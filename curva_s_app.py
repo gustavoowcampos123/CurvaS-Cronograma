@@ -14,7 +14,6 @@ def clean_weekday_abbreviation(date_str):
     return date_str.split(' ', 1)[1] if isinstance(date_str, str) else date_str
 
 # Função para ler o arquivo Excel e tratar as colunas de data
-@st.cache_data
 def read_excel(file):
     df = pd.read_excel(file)
     
@@ -33,7 +32,6 @@ def read_excel(file):
     return df
 
 # Função para gerar a Curva S
-@st.cache_data
 def gerar_curva_s(df_raw, start_date_str='16/09/2024'):
     df_raw['Início'] = df_raw['Início'].apply(lambda x: clean_weekday_abbreviation(x) if isinstance(x, str) else x)
     df_raw['Término'] = df_raw['Término'].apply(lambda x: clean_weekday_abbreviation(x) if isinstance(x, str) else x)
@@ -88,7 +86,6 @@ def gerar_curva_s(df_raw, start_date_str='16/09/2024'):
     return progress_by_week, curva_s_img_path
 
 # Função para exportar o relatório para Excel com 3 abas
-@st.cache_data
 def export_to_excel(df, curva_s_df, atividades_proxima_semana, atividades_proximos_15_dias):
     output = io.BytesIO()
     
@@ -127,7 +124,6 @@ def export_to_excel(df, curva_s_df, atividades_proxima_semana, atividades_proxim
     return output
 
 # Função para gerar o relatório em PDF
-@st.cache_data
 def gerar_relatorio_pdf(df, caminho_critico, atividades_sem_predecessora, atividades_atrasadas, curva_s_img_path):
     pdf = FPDF()
 
@@ -136,15 +132,12 @@ def gerar_relatorio_pdf(df, caminho_critico, atividades_sem_predecessora, ativid
 
     # Título do relatório
     pdf.cell(200, 10, txt="Relatório Detalhado do Projeto", ln=True, align="C")
-    pdf.ln(10)  # Espaço entre título e próximo
-
-
-    # Espaço entre título e próximo conteúdo
+    pdf.ln(10)  # Espaço entre título e próximo conteúdo
 
     # Adicionar Curva S
     pdf.cell(200, 10, txt="Curva S", ln=True)
     pdf.image(curva_s_img_path, x=10, y=40, w=190)  # Ajustar a posição e tamanho da imagem
-    pdf.ln(175)  # Adicionar espaçamento abaixo da imagem
+    pdf.ln(70)  # Adicionar espaçamento abaixo da imagem
 
     # Adicionar caminho crítico
     pdf.cell(200, 10, txt="Caminho Crítico", ln=True)
@@ -180,7 +173,6 @@ def gerar_relatorio_pdf(df, caminho_critico, atividades_sem_predecessora, ativid
 
     return pdf_output
 
-
 # Interface Streamlit
 st.title('Gerador de Curva S e Relatório')
 
@@ -196,13 +188,6 @@ if st.button("Gerar Relatório"):
 
             # Gerar Curva S e obter o gráfico como imagem
             progress_by_week, curva_s_img_path = gerar_curva_s(df_raw, start_date_str=start_date)
-
-            # Gerar Atividades para a Próxima Semana e Próximos 15 Dias
-            proximos_7_dias = pd.Timestamp.today() + pd.Timedelta(days=7)
-            atividades_proxima_semana = df_raw[(df_raw['Início'] <= proximos_7_dias) & (df_raw['Término'] >= pd.Timestamp.today())]
-
-            proximos_15_dias = pd.Timestamp.today() + pd.Timedelta(days=15)
-            atividades_proximos_15_dias = df_raw[(df_raw['Início'] <= proximos_15_dias) & (df_raw['Término'] >= pd.Timestamp.today())]
 
             # Abas para visualização com botões expansíveis
             with st.expander("Dados do Cronograma"):
@@ -221,14 +206,22 @@ if st.button("Gerar Relatório"):
             with st.expander("Atividades Atrasadas"):
                 st.dataframe(atividades_atrasadas)
 
+            proximos_7_dias = pd.Timestamp.today() + pd.Timedelta(days=7)
+            atividades_proxima_semana = df_raw[(df_raw['Início'] <= proximos_7_dias) & (df_raw['Término'] >= pd.Timestamp.today())]
+
             with st.expander("Atividades para Próxima Semana"):
                 st.dataframe(atividades_proxima_semana)
 
+            proximos_15_dias = pd.Timestamp.today() + pd.Timedelta(days=15)
+            atividades_proximos_15_dias = df_raw[(df_raw['Início'] <= proximos_15_dias) & (df_raw['Término'] >= pd.Timestamp.today())]
+            
             with st.expander("Atividades para os Próximos 15 Dias"):
                 st.dataframe(atividades_proximos_15_dias)
 
-            # Botão para baixar o relatório em PDF
+            # Gerar Relatório em PDF com a imagem da Curva S
             pdf_data = gerar_relatorio_pdf(df_raw, caminho_critico, atividades_sem_predecessora, atividades_atrasadas, curva_s_img_path)
+
+            # Botão para baixar o relatório em PDF
             st.download_button(
                 label="Baixar Relatório em PDF",
                 data=pdf_data.getvalue(),
@@ -236,8 +229,10 @@ if st.button("Gerar Relatório"):
                 mime="application/pdf"
             )
 
-            # Exportar o Excel com a Curva S
+            # Exportar o Excel com as 3 abas
             excel_data = export_to_excel(df_raw, progress_by_week, atividades_proxima_semana, atividades_proximos_15_dias)
+
+            # Botão para baixar o arquivo Excel
             st.download_button(
                 label="Baixar Cronograma com Curva S",
                 data=excel_data.getvalue(),
@@ -247,4 +242,3 @@ if st.button("Gerar Relatório"):
 
         except ValueError as e:
             st.error(f"Erro ao processar os dados: {e}")
-
