@@ -71,15 +71,16 @@ def gerar_curva_s(df_raw, start_date_str='16/09/2024'):
     plt.xticks(rotation=45)
     plt.tight_layout()
 
-    # Converter o gráfico em imagem no formato PNG
-    img_buffer = io.BytesIO()
-    fig.savefig(img_buffer, format='png')
-    img_buffer.seek(0)
+    # Salvar o gráfico em um arquivo temporário
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmpfile:
+        fig.savefig(tmpfile.name, format='png')
+        curva_s_path = tmpfile.name
+
     plt.close(fig)
 
     st.pyplot(fig)
 
-    return progress_by_week, img_buffer
+    return progress_by_week, curva_s_path
 
 # Função para exportar os dados para Excel com gráfico
 def export_to_excel(df, curva_s_df):
@@ -157,7 +158,6 @@ def gerar_relatorio_pdf(df, caminho_critico, atividades_sem_predecessora, ativid
     
     return pdf_output
 
-
 # Interface Streamlit
 st.title('Gerador de Curva S e Relatório')
 
@@ -172,7 +172,7 @@ if st.button("Gerar Relatório"):
             df_raw = read_excel(uploaded_file)
 
             # Gerar Curva S e obter o gráfico como imagem
-            progress_by_week, curva_s_img = gerar_curva_s(df_raw, start_date_str=start_date)
+            progress_by_week, curva_s_path = gerar_curva_s(df_raw, start_date_str=start_date)
 
             # Abas para visualização com botões expansíveis
             with st.expander("Dados do Cronograma"):
@@ -183,7 +183,7 @@ if st.button("Gerar Relatório"):
             with st.expander("Atividades sem Predecessoras"):
                 st.dataframe(atividades_sem_predecessora)
 
-            caminho_critico = df_raw[df_raw['Duracao'] > 15]  # Exemplo de caminho crítico simplificado
+                caminho_critico = df_raw[df_raw['Duracao'] > 15]  # Exemplo de caminho crítico simplificado
             with st.expander("Caminho Crítico"):
                 st.dataframe(caminho_critico)
 
@@ -204,7 +204,7 @@ if st.button("Gerar Relatório"):
                 st.dataframe(atividades_proximos_15_dias)
 
             # Gerar Relatório em PDF com a imagem da Curva S
-            pdf_data = gerar_relatorio_pdf(df_raw, atividades_sem_predecessora, atividades_atrasadas, caminho_critico, curva_s_img)
+            pdf_data = gerar_relatorio_pdf(df_raw, caminho_critico, atividades_sem_predecessora, atividades_atrasadas, curva_s_path)
 
             # Botão para baixar o relatório em PDF
             st.download_button(
