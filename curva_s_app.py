@@ -292,11 +292,6 @@ if st.button("Gerar Curva S"):
         try:
             st.title('AWPlan - A ferramenta de Controle de Cronograma')
 
-uploaded_file = st.file_uploader("Escolha o arquivo Excel do cronograma", type="xlsx")
-
-# Entradas de data sem a necessidade de apertar "Enter"
-start_date = st.text_input("Selecione a data de início do projeto (DD/MM/AAAA)", placeholder="DD/MM/AAAA")
-end_date = st.text_input("Selecione a data final do cronograma (DD/MM/AAAA)", placeholder="DD/MM/AAAA")
 
 # Adicionar o botão "Gerar Relatórios"
 if st.button("Gerar Relatórios"):
