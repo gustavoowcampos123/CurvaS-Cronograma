@@ -223,7 +223,7 @@ if st.button("Gerar Relatório"):
 
             # Botão para baixar o relatório em PDF
             st.download_button(
-                label="Baixar Relatório em PDF",
+                label="Baixar Relatório Gerencial em PDF",
                 data=pdf_data.getvalue(),
                 file_name="relatorio_projeto.pdf",
                 mime="application/pdf"
@@ -234,7 +234,7 @@ if st.button("Gerar Relatório"):
 
             # Botão para baixar o arquivo Excel
             st.download_button(
-                label="Baixar Cronograma com Curva S",
+                label="Baixar Arquivo Excel com Curva S, Atividades da Semana e Atividades para os Próximos 15 dias",
                 data=excel_data.getvalue(),
                 file_name="cronograma_com_curva_s.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
