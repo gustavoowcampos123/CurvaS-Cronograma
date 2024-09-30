@@ -178,7 +178,7 @@ st.title('AWPlan - A ferramenta de Gestão de Cronograma')
 
 uploaded_file = st.file_uploader("Escolha o arquivo Excel do cronograma", type="xlsx")
 
-start_date = st.text_input("Selecione a data de início do projeto (DD/MM/AAAA)", placeholder="16/09/2024")
+start_date = st.text_input("Selecione a data de início do projeto (DD/MM/AAAA)", placeholder="DD/MM/AAAA")
 
 if st.button("Gerar Relatório"):
     if uploaded_file is not None and start_date:
@@ -215,7 +215,7 @@ if st.button("Gerar Relatório"):
             proximos_15_dias = pd.Timestamp.today() + pd.Timedelta(days=15)
             atividades_proximos_15_dias = df_raw[(df_raw['Início'] <= proximos_15_dias) & (df_raw['Término'] >= pd.Timestamp.today())]
             
-            with st.expander("Atividades para os Próximos 15 Dias"):
+            with st.expander("  ▶️ Atividades para os Próximos 15 Dias"):
                 st.dataframe(atividades_proximos_15_dias)
 
             # Gerar Relatório em PDF com a imagem da Curva S
