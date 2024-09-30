@@ -10,6 +10,27 @@ from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.chart import LineChart, Reference
 from fpdf import FPDF
 
+
+# Função para ler o arquivo Excel e tratar as colunas de data
+def read_excel(file):
+    df = pd.read_excel(file)
+
+    # Limpar as colunas de datas removendo abreviações de dias da semana, caso necessário
+    df['Início'] = df['Início'].apply(lambda x: str(x).split(' ', 1)[1] if isinstance(x, str) and ' ' in x else x)
+    df['Término'] = df['Término'].apply(lambda x: str(x).split(' ', 1)[1] if isinstance(x, str) and ' ' in x else x)
+    
+    # Converter as colunas de data para datetime
+    df['Início'] = pd.to_datetime(df['Início'], format='%d/%m/%Y', errors='coerce')
+    df['Término'] = pd.to_datetime(df['Término'], format='%d/%m/%Y', errors='coerce')
+    
+    # Tratar a duração (caso haja alguma coluna de duração com o formato incorreto)
+    if 'Duração' in df.columns:
+        df['Duracao'] = df['Duração'].str.extract('(\d+)').astype(float)
+    else:
+        df['Duracao'] = (df['Término'] - df['Início']).dt.days  # Calcular duração automaticamente
+
+    return df
+
 # Função para gerar o relatório em PDF
 def gerar_relatorio_pdf(df, caminho_critico, atividades_sem_predecessora, atividades_atrasadas, curva_s_path):
     pdf = FPDF()
