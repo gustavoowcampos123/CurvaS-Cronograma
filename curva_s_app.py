@@ -143,7 +143,7 @@ def gerar_relatorio_pdf(df, atividades_sem_predecessora, atividades_atrasadas, c
         pdf.cell(200, 10, txt=row['Nome da tarefa'], ln=True)
 
     output = io.BytesIO()
-    pdf.output(output)
+    pdf.output(output, 'S').encode('latin1')  # Corrigido para salvar no buffer de memória
     output.seek(0)
     
     # Remover o arquivo temporário
@@ -185,7 +185,8 @@ if st.button("Gerar Relatório"):
             st.dataframe(atividades_atrasadas)
 
             proximos_7_dias = pd.Timestamp.today() + pd.Timedelta(days=7)
-            atividades_proxima_semana = df_raw[(df_raw['Início'] <= proximos_7_dias) & (df_raw['Término'] >= pd.Timestamp.today())]
+            atividades_proxima_semana = df_raw[(df_raw['Início'] <= proximos_7_dia) & (df_raw['Término'] >= pd.Timestamp.today())]
+
             # Atividades para Próxima Semana
             st.write("### Atividades para Próxima Semana")
             st.dataframe(atividades_proxima_semana)
@@ -211,3 +212,5 @@ if st.button("Gerar Relatório"):
         except ValueError as e:
             st.error(f"Erro ao processar os dados: {e}")
 
+
+        
