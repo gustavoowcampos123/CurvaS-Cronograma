@@ -243,76 +243,108 @@ st.title('Gerador de Curva S e Caminho Crítico com Alerta de Atraso e Relatóri
 
 uploaded_file = st.file_uploader("Escolha o arquivo Excel do cronograma", type="xlsx")
 
+# Entradas de data sem a necessidade de apertar "Enter"
 start_date = st.text_input("Selecione a data de início do projeto (DD/MM/AAAA)", placeholder="DD/MM/AAAA")
 end_date = st.text_input("Selecione a data final do cronograma (DD/MM/AAAA)", placeholder="DD/MM/AAAA")
 
-if uploaded_file is not None and start_date and end_date:
-    try:
-        # Verifique se o arquivo foi carregado com sucesso
-        if uploaded_file is not None:
-            # Converter as datas de início e final para o formato correto
-            start_date = pd.to_datetime(start_date, format='%d/%m/%Y')
-            end_date = pd.to_datetime(end_date, format='%d/%m/%Y')
+# Adicionar o botão "Gerar Relatórios"
+if st.button("Gerar Relatórios"):
+    if uploaded_file is not None and start_date and end_date:
+        try:
+            # Verificar se o arquivo foi carregado com sucesso
+            if uploaded_file is not None:
+                # Converter as datas de início e final para o formato correto
+                start_date = pd.to_datetime(start_date, format='%d/%m/%Y')
+                end_date = pd.to_datetime(end_date, format='%d/%m/%Y')
 
-            # Processar o arquivo Excel
-            df = read_excel(uploaded_file)
-        
-            st.write("Dados do cronograma:")
-            st.dataframe(df)
-        
-            atividades_maior_15_dias, atividades_sem_predecessora, caminho_critico = calcular_caminho_critico_maior_que_15_dias(df)
+                # Processar o arquivo Excel
+                df = read_excel(uploaded_file)
+            
+                st.write("Dados do cronograma:")
+                st.dataframe(df)
+            
+                atividades_maior_15_dias, atividades_sem_predecessora, caminho_critico = calcular_caminho_critico_maior_que_15_dias(df)
 
-            # Expander para "Atividades sem predecessoras"
-            with st.expander("Atividades sem Predecessoras"):
-                if atividades_sem_predecessora:
-                    st.write("Atividades sem predecessoras:")
-                    atividades_sem_predecessora_df = pd.DataFrame(atividades_sem_predecessora)
-                    st.table(atividades_sem_predecessora_df[['Nome da tarefa', 'Início', 'Término', 'Duracao']])
+                # Expander para "Atividades sem predecessoras"
+                with st.expander("Atividades sem Predecessoras"):
+                    if atividades_sem_predecessora:
+                        st.write("Atividades sem predecessoras:")
+                        atividades_sem_predecessora_df = pd.DataFrame(atividades_sem_predecessora)
+                        st.table(atividades_sem_predecessora_df[['Nome da tarefa', 'Início', 'Término', 'Duracao']])
+                    else:
+                        st.write("Nenhuma atividade sem predecessoras encontrada.")
+
+                # Expander para "Caminho Crítico"
+                with st.expander("Caminho Crítico"):
+                    if atividades_maior_15_dias.empty:
+                        st.write("Nenhuma atividade com mais de 15 dias de duração no caminho crítico.")
+                    else:
+                        st.write("Atividades no caminho crítico com mais de 15 dias de duração:")
+                        st.table(atividades_maior_15_dias)
+
+                # Expander para "Atividades Atrasadas" com seta
+                with st.expander("▶ Atividades Atrasadas"):
+                    if not df[df['Término'] < pd.Timestamp.today().normalize()].empty:
+                        st.warning("Atividades Atrasadas:")
+                        atividades_atrasadas = df[df['Término'] < pd.Timestamp.today().normalize()]
+                        st.table(atividades_atrasadas[['Nome da tarefa', 'Início', 'Término', 'Duracao']])
+                    else:
+                        st.success("Nenhuma atividade atrasada.")
+
+                # Atividades para a próxima semana (7 dias)
+                with st.expander("▶ Atividades para Próxima Semana"):
+                    data_atual = pd.Timestamp.today().normalize()
+                    proximos_7_dias = data_atual + pd.Timedelta(days=7)
+                    atividades_proxima_semana = df[(df['Início'] <= proximos_7_dias) & (df['Término'] >= data_atual)]
+                    
+                    if not atividades_proxima_semana.empty:
+                        st.info("Atividades que iniciam ou terminam nos próximos 7 dias:")
+                        st.table(atividades_proxima_semana[['Nome da tarefa', 'Início', 'Término', 'Duracao']])
+                    else:
+                        st.success("Nenhuma atividade para a próxima semana.")
+
+                # Atividades para os próximos 15 dias
+                with st.expander("▶ Atividades para os Próximos 15 Dias"):
+                    proximos_15_dias = data_atual + pd.Timedelta(days=15)
+                    atividades_proximos_15_dias = df[(df['Início'] <= proximos_15_dias) & (df['Término'] >= data_atual)]
+                    
+                    if not atividades_proximos_15_dias.empty:
+                        st.info("Atividades que iniciam ou terminam nos próximos 15 dias:")
+                        st.table(atividades_proximos_15_dias[['Nome da tarefa', 'Início', 'Término', 'Duracao']])
+                    else:
+                        st.success("Nenhuma atividade para os próximos 15 dias.")
+
+                if end_date <= start_date:
+                    st.error("A data final do cronograma deve ser posterior à data inicial.")
                 else:
-                    st.write("Nenhuma atividade sem predecessoras encontrada.")
+                    # Gerar Curva S
+                    timeline, curva_s, delta = generate_s_curve(df, start_date, end_date)
+                    
+                    st.write("Curva S:")
+                    curva_s_path = plot_s_curve(timeline, curva_s, start_date)
+                    
+                    # Exportar o Excel e fornecer o download
+                    excel_data = export_to_excel(df, caminho_critico, curva_s, delta, timeline)
+                    
+                    # Botão de download do Excel
+                    st.download_button(
+                        label="Baixar Cronograma com Curva S",
+                        data=excel_data.getvalue(),
+                        file_name="cronograma_com_curva_s.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    )
 
-            # Expander para "Caminho Crítico"
-            with st.expander("Caminho Crítico"):
-                if atividades_maior_15_dias.empty:
-                    st.write("Nenhuma atividade com mais de 15 dias de duração no caminho crítico.")
-                else:
-                    st.write("Atividades no caminho crítico com mais de 15 dias de duração:")
-                    st.table(atividades_maior_15_dias)
+                    # Gerar relatório em PDF
+                    atividades_atrasadas = df[df['Término'] < pd.Timestamp.today().normalize()]
+                    pdf_data = gerar_relatorio_pdf(df, caminho_critico, atividades_sem_predecessora, atividades_atrasadas, curva_s_path)
+                    
+                    # Botão de download do PDF
+                    st.download_button(
+                        label="Baixar Relatório em PDF",
+                        data=pdf_data.getvalue(),
+                        file_name="relatorio_projeto.pdf",
+                        mime="application/pdf"
+                    )
 
-            # Gerar alerta de atividades atrasadas
-            gerar_alerta_atraso(df)
-
-            if end_date <= start_date:
-                st.error("A data final do cronograma deve ser posterior à data inicial.")
-            else:
-                # Gerar Curva S
-                timeline, curva_s, delta = generate_s_curve(df, start_date, end_date)
-                
-                st.write("Curva S:")
-                curva_s_path = plot_s_curve(timeline, curva_s, start_date)
-                
-                # Exportar o Excel e fornecer o download
-                excel_data = export_to_excel(df, caminho_critico, curva_s, delta, timeline)
-                
-                # Botão de download do Excel
-                st.download_button(
-                    label="Baixar Cronograma com Curva S",
-                    data=excel_data.getvalue(),
-                    file_name="cronograma_com_curva_s.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
-
-                # Gerar relatório em PDF
-                atividades_atrasadas = df[df['Término'] < pd.Timestamp.today().normalize()]
-                pdf_data = gerar_relatorio_pdf(df, caminho_critico, atividades_sem_predecessora, atividades_atrasadas, curva_s_path)
-                
-                # Botão de download do PDF
-                st.download_button(
-                    label="Baixar Relatório em PDF",
-                    data=pdf_data.getvalue(),
-                    file_name="relatorio_projeto.pdf",
-                    mime="application/pdf"
-                )
-
-    except ValueError as e:
-        st.error(f"Erro ao processar os dados: {e}")
+        except ValueError as e:
+            st.error(f"Erro ao processar os dados: {e}")
