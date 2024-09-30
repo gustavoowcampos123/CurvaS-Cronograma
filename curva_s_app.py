@@ -39,6 +39,91 @@ def read_excel(file):
     
     return df
 
+# Função para gerar a Curva S e salvar como PNG
+def plot_s_curve(timeline, curva_s, start_date):
+    semanas = calcular_numero_semana(timeline, start_date)
+    
+    fig, ax = plt.subplots()
+    ax.plot(semanas, curva_s, marker='o', label="Curva S (0 a 100%)")
+    ax.axvline(x=semanas[0], color='green', linestyle='--', label="Início do Cronograma")
+    
+    ax.set_title('Curva S - Progresso Acumulado (0 a 100%)')
+    ax.set_xlabel('Número da Semana')
+    ax.set_ylabel('Progresso Acumulado (%)')
+    ax.set_ylim(0, 100)
+    ax.grid(True)
+
+    ax.set_xticks(semanas)
+    plt.xticks(rotation=45)
+
+    plt.legend()
+    st.pyplot(fig)
+
+    # Salvar o gráfico como PNG temporário
+    curva_s_path = "curva_s.png"
+    fig.savefig(curva_s_path)
+    plt.close(fig)
+
+    return curva_s_path
+
+# Função para calcular o número da semana a partir de uma data inicial
+def calcular_numero_semana(timeline, start_date):
+    return [(date - start_date).days // 7 + 1 for date in timeline]
+
+# Função para gerar o relatório em PDF
+def gerar_relatorio_pdf(df, caminho_critico, atividades_sem_predecessora, atividades_atrasadas, curva_s_path):
+    pdf = FPDF()
+
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+
+    # Título do relatório
+    pdf.set_font("Arial", 'B', 16)
+    pdf.cell(200, 10, txt="Relatório Detalhado do Projeto", ln=True, align="C")
+    pdf.ln(10)  # Espaço entre título e próximo conteúdo
+
+    # Adicionar Curva S
+    pdf.set_font("Arial", 'B', 12)
+    pdf.cell(200, 10, txt="Curva S", ln=True)
+    pdf.image(curva_s_path, x=10, y=40, w=190)  # Ajustar a posição e tamanho da imagem
+    pdf.ln(70)  # Adicionar espaçamento abaixo da imagem
+
+    # Adicionar caminho crítico
+    pdf.cell(200, 10, txt="Caminho Crítico", ln=True)
+    pdf.set_font("Arial", '', 12)
+    for atividade in caminho_critico:
+        pdf.cell(200, 10, txt=atividade, ln=True)
+    pdf.ln(10)  # Espaçamento entre seções
+
+    # Adicionar atividades sem predecessoras
+    pdf.set_font("Arial", 'B', 12)
+    pdf.cell(200, 10, txt="Atividades Sem Predecessoras", ln=True)
+    pdf.set_font("Arial", '', 12)
+    atividades_sem_predecessora_df = pd.DataFrame(atividades_sem_predecessora)
+    for _, row in atividades_sem_predecessora_df.iterrows():
+        pdf.cell(200, 10, txt=row['Nome da tarefa'], ln=True)
+    pdf.ln(10)  # Espaçamento entre seções
+
+    # Adicionar atividades atrasadas
+    if not atividades_atrasadas.empty:
+        pdf.set_font("Arial", 'B', 12)
+        pdf.cell(200, 10, txt="Atividades Atrasadas", ln=True)
+        pdf.set_font("Arial", '', 12)
+        for _, row in atividades_atrasadas.iterrows():
+            pdf.cell(200, 10, txt=row['Nome da tarefa'], ln=True)
+    pdf.ln(10)  # Espaçamento final
+
+    # Salvar o relatório em PDF no objeto BytesIO
+    pdf_output = io.BytesIO()
+    pdf.output(pdf_output, 'S').encode('latin1')  # O parâmetro 'S' retorna o conteúdo como string
+    pdf_output.seek(0)
+
+    # Remover o arquivo temporário de gráfico
+    if os.path.exists(curva_s_path):
+        os.remove(curva_s_path)
+    
+    return pdf_output
+
 # Função para exportar os dados para Excel com gráfico
 def export_to_excel(df, caminho_critico, curva_s, delta, timeline):
     output = io.BytesIO()
@@ -81,37 +166,6 @@ def export_to_excel(df, caminho_critico, curva_s, delta, timeline):
     
     return output
 
-# Função para gerar a Curva S e salvar como PNG
-def plot_s_curve(timeline, curva_s, start_date):
-    semanas = calcular_numero_semana(timeline, start_date)
-    
-    fig, ax = plt.subplots()
-    ax.plot(semanas, curva_s, marker='o', label="Curva S (0 a 100%)")
-    ax.axvline(x=semanas[0], color='green', linestyle='--', label="Início do Cronograma")
-    
-    ax.set_title('Curva S - Progresso Acumulado (0 a 100%)')
-    ax.set_xlabel('Número da Semana')
-    ax.set_ylabel('Progresso Acumulado (%)')
-    ax.set_ylim(0, 100)
-    ax.grid(True)
-
-    ax.set_xticks(semanas)
-    plt.xticks(rotation=45)
-
-    plt.legend()
-    st.pyplot(fig)
-
-    # Salvar o gráfico como PNG temporário
-    curva_s_path = "curva_s.png"
-    fig.savefig(curva_s_path)
-    plt.close(fig)
-
-    return curva_s_path
-
-# Função para calcular o número da semana a partir de uma data inicial
-def calcular_numero_semana(timeline, start_date):
-    return [(date - start_date).days // 7 + 1 for date in timeline]
-
 # Função para gerar a Curva S
 def generate_s_curve(df, start_date, end_date):
     df['Início'] = pd.to_datetime(df['Início'])
@@ -133,7 +187,6 @@ def generate_s_curve(df, start_date, end_date):
     delta = np.diff(progresso_acumulado_percentual, prepend=0)
     
     return timeline, progresso_acumulado_percentual, delta
-
 # Função para calcular o caminho crítico e listar as atividades com duração maior que 15 dias
 def calcular_caminho_critico_maior_que_15_dias(df):
     caminho_critico, atividades_sem_predecessora = calculate_critical_path(df)
@@ -289,4 +342,3 @@ if st.button("Gerar Relatórios"):
 
         except ValueError as e:
             st.error(f"Erro ao processar os dados: {e}")
-
