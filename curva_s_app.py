@@ -6,7 +6,9 @@ from openpyxl import Workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.chart import LineChart, Reference
 from fpdf import FPDF
+from PIL import Image
 import datetime
+import tempfile  # Para gerar arquivos temporários
 
 # Função para limpar a abreviação dos dias da semana
 def clean_weekday_abbreviation(date_str):
@@ -114,9 +116,16 @@ def gerar_relatorio_pdf(df, atividades_sem_predecessora, atividades_atrasadas, c
     pdf.set_font("Arial", size=12)
     pdf.cell(200, 10, txt="Relatório do Projeto", ln=True, align="C")
 
-    # Adicionar a imagem da Curva S no PDF diretamente do buffer
+    # Salvar temporariamente a imagem da Curva S
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as temp_image:
+        img_filename = temp_image.name
+        curva_s_img.seek(0)
+        with open(img_filename, 'wb') as f:
+            f.write(curva_s_img.read())
+
+    # Adicionar a imagem da Curva S no PDF
     pdf.cell(200, 10, txt="Curva S", ln=True)
-    pdf.image(curva_s_img, x=10, y=30, w=190)
+    pdf.image(img_filename, x=10, y=30, w=190)
 
     pdf.ln(180)
     pdf.cell(200, 10, txt="Caminho Crítico", ln=True)
@@ -137,6 +146,9 @@ def gerar_relatorio_pdf(df, atividades_sem_predecessora, atividades_atrasadas, c
     pdf.output(output)
     output.seek(0)
     
+    # Remover o arquivo temporário
+    os.remove(img_filename)
+
     return output
 
 # Interface Streamlit
@@ -175,10 +187,14 @@ if st.button("Gerar Relatório"):
             proximos_7_dias = pd.Timestamp.today() + pd.Timedelta(days=7)
             atividades_proxima_semana = df_raw[(df_raw['Início'] <= proximos_7_dias) & (df_raw['Término'] >= pd.Timestamp.today())]
             st.write("### Atividades para Próxima Semana")
+                        # Atividades para Próxima Semana
+            st.write("### Atividades para Próxima Semana")
             st.dataframe(atividades_proxima_semana)
 
             proximos_15_dias = pd.Timestamp.today() + pd.Timedelta(days=15)
             atividades_proximos_15_dias = df_raw[(df_raw['Início'] <= proximos_15_dias) & (df_raw['Término'] >= pd.Timestamp.today())]
+            
+            # Atividades para os Próximos 15 dias
             st.write("### Atividades para os Próximos 15 Dias")
             st.dataframe(atividades_proximos_15_dias)
 
@@ -195,4 +211,3 @@ if st.button("Gerar Relatório"):
 
         except ValueError as e:
             st.error(f"Erro ao processar os dados: {e}")
-
