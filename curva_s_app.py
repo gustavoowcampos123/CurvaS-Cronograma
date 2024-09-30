@@ -6,7 +6,6 @@ from openpyxl import Workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.chart import LineChart, Reference
 from fpdf import FPDF
-from PIL import Image
 import tempfile
 import os
 
