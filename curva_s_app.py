@@ -121,7 +121,15 @@ def gerar_relatorio_pdf(df, caminho_critico, atividades_sem_predecessora, ativid
 
     # Adicionar Curva S
     pdf.cell(200, 10, txt="Curva S", ln=True)
-    pdf.image(curva_s_img, x=10, y=40, w=190)  # Ajustar a posição e tamanho da imagem
+    
+    # Salvar a imagem temporária
+    curva_s_img.seek(0)
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as temp_img_file:
+        temp_img_file.write(curva_s_img.read())
+        img_filename = temp_img_file.name
+
+    # Adicionar a imagem no PDF
+    pdf.image(img_filename, x=10, y=40, w=190)  # Ajustar a posição e tamanho da imagem
     pdf.ln(70)  # Adicionar espaçamento abaixo da imagem
 
     # Adicionar caminho crítico
@@ -149,10 +157,14 @@ def gerar_relatorio_pdf(df, caminho_critico, atividades_sem_predecessora, ativid
 
     # Salvar o relatório em PDF no objeto BytesIO
     pdf_output = io.BytesIO()
-    pdf.output(pdf_output, 'S')  # Use 'S' para salvar diretamente no fluxo de bytes
+    pdf_output.write(pdf.output(dest='S').encode('latin1'))  # Salva diretamente no fluxo de bytes
     pdf_output.seek(0)
 
+    # Remover o arquivo temporário
+    os.remove(img_filename)
+
     return pdf_output
+
 
 
 # Interface Streamlit
