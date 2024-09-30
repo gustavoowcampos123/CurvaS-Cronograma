@@ -223,7 +223,7 @@ if st.button("Gerar Relatórios"):
                     st.write("Atividades no caminho crítico com mais de 15 dias de duração:")
                     st.table(atividades_maior_15_dias)
 
-            # Expander para "Atividades Atrasadas"
+            # Expander para "Atividades Atrasadas" com seta
             with st.expander("▶ Atividades Atrasadas"):
                 data_atual = pd.Timestamp.today().normalize()
                 atividades_atrasadas = df[df['Término'] < data_atual]
@@ -289,5 +289,4 @@ if st.button("Gerar Relatórios"):
 
         except ValueError as e:
             st.error(f"Erro ao processar os dados: {e}")
-
 
