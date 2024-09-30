@@ -108,48 +108,55 @@ def export_to_excel(df, curva_s_df):
     return output
 
 # Função para gerar o relatório em PDF
-def gerar_relatorio_pdf(df, atividades_sem_predecessora, atividades_atrasadas, caminho_critico, curva_s_img):
+def gerar_relatorio_pdf(df, caminho_critico, atividades_sem_predecessora, atividades_atrasadas, curva_s_path):
     pdf = FPDF()
 
     pdf.add_page()
     pdf.set_font("Arial", size=12)
-    pdf.cell(200, 10, txt="Relatório do Projeto", ln=True, align="C")
 
-    # Salvar temporariamente a imagem da Curva S
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as temp_image:
-        img_filename = temp_image.name
-        curva_s_img.seek(0)
-        with open(img_filename, 'wb') as f:
-            f.write(curva_s_img.read())
+    # Título do relatório
+    pdf.cell(200, 10, txt="Relatório Detalhado do Projeto", ln=True, align="C")
+    pdf.ln(10)  # Espaço entre título e próximo conteúdo
 
-    # Adicionar a imagem da Curva S no PDF
+    # Adicionar Curva S
     pdf.cell(200, 10, txt="Curva S", ln=True)
-    pdf.image(img_filename, x=10, y=30, w=190)
+    pdf.image(curva_s_path, x=10, y=40, w=190)  # Ajustar a posição e tamanho da imagem
+    pdf.ln(70)  # Adicionar espaçamento abaixo da imagem
 
-    pdf.ln(180)
+    # Adicionar caminho crítico
     pdf.cell(200, 10, txt="Caminho Crítico", ln=True)
+    pdf.ln(5)  # Espaçamento
     for atividade in caminho_critico:
         pdf.cell(200, 10, txt=atividade, ln=True)
+    pdf.ln(10)  # Espaçamento entre seções
 
-    pdf.ln(10)
+    # Adicionar atividades sem predecessoras
     pdf.cell(200, 10, txt="Atividades Sem Predecessoras", ln=True)
-    for _, row in atividades_sem_predecessora.iterrows():
+    atividades_sem_predecessora_df = pd.DataFrame(atividades_sem_predecessora)
+    pdf.ln(5)  # Espaçamento
+    for _, row in atividades_sem_predecessora_df.iterrows():
         pdf.cell(200, 10, txt=row['Nome da tarefa'], ln=True)
+    pdf.ln(10)  # Espaçamento entre seções
 
-    pdf.ln(10)
-    pdf.cell(200, 10, txt="Atividades Atrasadas", ln=True)
-    for _, row in atividades_atrasadas.iterrows():
-        pdf.cell(200, 10, txt=row['Nome da tarefa'], ln=True)
+    # Adicionar atividades atrasadas
+    if not atividades_atrasadas.empty:
+        pdf.cell(200, 10, txt="Atividades Atrasadas", ln=True)
+        pdf.ln(5)  # Espaçamento
+        for _, row in atividades_atrasadas.iterrows():
+            pdf.cell(200, 10, txt=row['Nome da tarefa'], ln=True)
+    pdf.ln(10)  # Espaçamento final
 
-    output = io.BytesIO()
-    pdf.output(output, 'S').encode('latin1')  # Corrigido para garantir que o PDF seja gerado corretamente
-    output.seek(0)
+    # Salvar o relatório em PDF no objeto BytesIO
+    pdf_output = io.BytesIO()
+    pdf.output(pdf_output)  # Salva diretamente no fluxo de bytes
+    pdf_output.seek(0)
+
+    # Remover o arquivo temporário de gráfico
+    if os.path.exists(curva_s_path):
+        os.remove(curva_s_path)
     
-    # Verificar se o arquivo temporário existe antes de tentar removê-lo
-    if os.path.exists(img_filename):
-        os.remove(img_filename)
+    return pdf_output
 
-    return output
 
 # Interface Streamlit
 st.title('Gerador de Curva S e Relatório')
