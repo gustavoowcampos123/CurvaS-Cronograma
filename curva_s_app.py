@@ -173,7 +173,7 @@ def gerar_relatorio_pdf(df, caminho_critico, atividades_sem_predecessora, ativid
     # Adicionar Curva S
     pdf.cell(200, 10, txt="Curva S", ln=True)
     pdf.image(curva_s_img_path, x=10, y=40, w=190)  # Ajustar a posição e tamanho da imagem
-    pdf.ln(70)  # Adicionar espaçamento abaixo da imagem
+    pdf.ln(175)  # Adicionar espaçamento abaixo da imagem
 
     # Adicionar caminho crítico
     pdf.cell(200, 10, txt="Caminho Crítico", ln=True)
