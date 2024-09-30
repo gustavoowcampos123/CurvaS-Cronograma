@@ -144,7 +144,7 @@ def gerar_relatorio_pdf(df, atividades_sem_predecessora, atividades_atrasadas, c
         pdf.cell(200, 10, txt=row['Nome da tarefa'], ln=True)
 
     output = io.BytesIO()
-    pdf.output(output, 'S').encode('latin1')  # Corrigido para salvar no buffer de memória
+    pdf.output(output, 'S')  # Corrigido para salvar no buffer de memória corretamente
     output.seek(0)
     
     # Verificar se o arquivo temporário existe antes de tentar removê-lo
@@ -193,9 +193,9 @@ if st.button("Gerar Relatório"):
             st.write("### Atividades para Próxima Semana")
             st.dataframe(atividades_proxima_semana)
 
-            proximos_15_dias = pd.Timestamp.today() + pd.Timedelta(days=15)
+                        proximos_15_dias = pd.Timestamp.today() + pd.Timedelta(days=15)
             atividades_proximos_15_dias = df_raw[(df_raw['Início'] <= proximos_15_dias) & (df_raw['Término'] >= pd.Timestamp.today())]
-
+            
             # Atividades para os Próximos 15 Dias
             st.write("### Atividades para os Próximos 15 Dias")
             st.dataframe(atividades_proximos_15_dias)
