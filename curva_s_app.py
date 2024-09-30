@@ -14,9 +14,9 @@ def clean_weekday_abbreviation(date_str):
 def read_excel(file):
     df = pd.read_excel(file)
     
-    # Limpar as colunas de datas
-    df['Início'] = df['Início'].apply(clean_weekday_abbreviation)
-    df['Término'] = df['Término'].apply(clean_weekday_abbreviation)
+    # Limpar as colunas de datas, aplicando apenas se o valor for uma string
+    df['Início'] = df['Início'].apply(lambda x: clean_weekday_abbreviation(x) if isinstance(x, str) else x)
+    df['Término'] = df['Término'].apply(lambda x: clean_weekday_abbreviation(x) if isinstance(x, str) else x)
     
     # Converter para datetime
     df['Início'] = pd.to_datetime(df['Início'], format='%d/%m/%y', errors='coerce')
@@ -31,11 +31,9 @@ def read_excel(file):
 # Função para gerar a Curva S
 def gerar_curva_s(df_raw, start_date_str='16/09/2024'):
     # Limpeza e formatação das datas
-    df_raw['Início'] = df_raw['Início'].str.replace(r'[A-Za-z]+\s', '', regex=True)
-    df_raw['Término'] = df_raw['Término'].str.replace(r'[A-Za-z]+\s', '', regex=True)
-    df_raw['Início'] = pd.to_datetime(df_raw['Início'], format='%d/%m/%y', errors='coerce')
-    df_raw['Término'] = pd.to_datetime(df_raw['Término'], format='%d/%m/%y', errors='coerce')
-
+    df_raw['Início'] = df_raw['Início'].apply(lambda x: clean_weekday_abbreviation(x) if isinstance(x, str) else x)
+    df_raw['Término'] = df_raw['Término'].apply(lambda x: clean_weekday_abbreviation(x) if isinstance(x, str) else x)
+    
     # Definir a linha do tempo semanal
     start_date = pd.to_datetime(start_date_str)
     end_date = df_raw['Término'].max()
