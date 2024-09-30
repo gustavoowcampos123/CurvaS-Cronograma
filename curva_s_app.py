@@ -239,7 +239,7 @@ def calculate_critical_path(df):
         return [], atividades_sem_predecessora
 
 # Interface Streamlit
-st.title('Gerador de Curva S e Caminho Crítico com Alerta de Atraso e Relatório PDF')
+st.title('AWPlan - A ferramenta de Controle de Cronograma')
 
 uploaded_file = st.file_uploader("Escolha o arquivo Excel do cronograma", type="xlsx")
 
