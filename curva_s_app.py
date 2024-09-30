@@ -200,12 +200,6 @@ if st.button("Gerar Relatório"):
                     st.dataframe(atividades_proximos_15_dias)
                 else:
                     st.write("Nenhuma atividade para os próximos 15 dias.")
-                                with tab6:
-                st.write("### Atividades para os Próximos 15 Dias")
-                if not atividades_proximos_15_dias.empty:
-                    st.dataframe(atividades_proximos_15_dias)
-                else:
-                    st.write("Nenhuma atividade para os próximos 15 dias.")
 
             # Exportar os dados para Excel e fornecer o botão de download
             curva_s_df = pd.DataFrame({
