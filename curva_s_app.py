@@ -7,7 +7,6 @@ from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.chart import LineChart, Reference
 from fpdf import FPDF
 from PIL import Image
-import datetime
 import tempfile
 import os
 
@@ -144,7 +143,7 @@ def gerar_relatorio_pdf(df, atividades_sem_predecessora, atividades_atrasadas, c
         pdf.cell(200, 10, txt=row['Nome da tarefa'], ln=True)
 
     output = io.BytesIO()
-    pdf.output(output, 'S')  # Corrigido para salvar no buffer de memória corretamente
+    pdf.output(output, 'S').encode('latin1')  # Corrigido para garantir que o PDF seja gerado corretamente
     output.seek(0)
     
     # Verificar se o arquivo temporário existe antes de tentar removê-lo
