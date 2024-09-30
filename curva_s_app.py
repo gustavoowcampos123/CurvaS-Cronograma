@@ -167,36 +167,34 @@ if st.button("Gerar Relatório"):
             # Gerar Curva S e obter o gráfico como imagem
             progress_by_week, curva_s_img = gerar_curva_s(df_raw, start_date_str=start_date)
 
-            # Abas para visualização
-            st.write("### Dados do Cronograma")
-            st.dataframe(df_raw)
+            # Abas para visualização com botões expansíveis
+            with st.expander("Dados do Cronograma"):
+                st.dataframe(df_raw)
 
             atividades_sem_predecessora = df_raw[df_raw['Predecessoras'].isna()]
 
-            st.write("### Atividades sem Predecessoras")
-            st.dataframe(atividades_sem_predecessora)
+            with st.expander("Atividades sem Predecessoras"):
+                st.dataframe(atividades_sem_predecessora)
 
             caminho_critico = df_raw[df_raw['Duracao'] > 15]  # Exemplo de caminho crítico simplificado
-            st.write("### Caminho Crítico")
-            st.dataframe(caminho_critico)
+            with st.expander("Caminho Crítico"):
+                st.dataframe(caminho_critico)
 
             atividades_atrasadas = df_raw[df_raw['Término'] < pd.Timestamp.today()]
-            st.write("### Atividades Atrasadas")
-            st.dataframe(atividades_atrasadas)
+            with st.expander("Atividades Atrasadas"):
+                st.dataframe(atividades_atrasadas)
 
             proximos_7_dias = pd.Timestamp.today() + pd.Timedelta(days=7)
             atividades_proxima_semana = df_raw[(df_raw['Início'] <= proximos_7_dias) & (df_raw['Término'] >= pd.Timestamp.today())]
 
-            # Atividades para Próxima Semana
-            st.write("### Atividades para Próxima Semana")
-            st.dataframe(atividades_proxima_semana)
+            with st.expander("Atividades para Próxima Semana"):
+                st.dataframe(atividades_proxima_semana)
 
-            proximos_15_dias = pd.Timestamp.today() + pd.Timedelta(days=15)
+                        proximos_15_dias = pd.Timestamp.today() + pd.Timedelta(days=15)
             atividades_proximos_15_dias = df_raw[(df_raw['Início'] <= proximos_15_dias) & (df_raw['Término'] >= pd.Timestamp.today())]
             
-            # Atividades para os Próximos 15 Dias
-            st.write("### Atividades para os Próximos 15 Dias")
-            st.dataframe(atividades_proximos_15_dias)
+            with st.expander("Atividades para os Próximos 15 Dias"):
+                st.dataframe(atividades_proximos_15_dias)
 
             # Gerar Relatório em PDF com a imagem da Curva S
             pdf_data = gerar_relatorio_pdf(df_raw, atividades_sem_predecessora, atividades_atrasadas, caminho_critico, curva_s_img)
